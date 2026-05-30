@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy": "yarn build && scp -r dist/* miguel@192.168.0.110:/var/www/ruleta.ledemar.es"
   },
   "dependencies": {
     "react": "^19.2.6",
