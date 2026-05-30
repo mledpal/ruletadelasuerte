@@ -8,6 +8,7 @@ import { WinnerModal } from './components/WinnerModal/WinnerModal';
 import { useGame } from './context/GameContext';
 import { useTheme } from './hooks/useTheme';
 import { usePhrases } from './hooks/usePhrases';
+import type { Phrase } from './types/game';
 import { PlayerSetup } from './components/PlayerSetup/PlayerSetup';
 import './App.css';
 

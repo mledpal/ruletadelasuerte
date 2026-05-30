@@ -139,7 +139,7 @@ export function GameControls() {
         const winnings = state.wheelValue * result.count;
         dispatch({ type: 'ADD_SCORE', payload: { playerId: currentPlayer.id, amount: winnings } });
         setMessage({
-          text: allVowelsRevealed
+          text: allVowelsGuessed
             ? `¡Correcto! ${result.count} aparición(es). +${winnings} €`
             : `¡Correcto! ${result.count} aparición(es). +${winnings} €. Ahora puedes comprar vocales.`,
           type: 'success',
