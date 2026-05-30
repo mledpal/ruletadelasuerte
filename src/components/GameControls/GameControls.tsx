@@ -79,9 +79,7 @@ export function GameControls() {
     (cell) => cell.state === 'hidden' && cell.letter !== null && !VOWELS.includes(cell.letter ?? '')
   );
   const canSpin = state.turnPhase === 'spin' || state.turnPhase === 'next-action';
-  const allVowelsRevealed = VOWELS.every(
-    (v) => !state.cells.some((c) => c.letter === v && c.state === 'hidden')
-  );
+  const allVowelsGuessed = VOWELS.every((v) => state.guessedLetters.includes(v));
 
   const handleChangeTurn = useCallback(async () => {
     playTransition();
@@ -147,7 +145,7 @@ export function GameControls() {
           type: 'success',
         });
       }
-      dispatch({ type: 'SET_TURN_PHASE', payload: allVowelsRevealed ? 'next-action' : 'vowels' });
+      dispatch({ type: 'SET_TURN_PHASE', payload: allVowelsGuessed ? 'next-action' : 'vowels' });
     } else {
       setFailedLetterType('consonant');
       if (pendingSpecialResult === 'COMODIN') {
@@ -167,7 +165,7 @@ export function GameControls() {
     dispatch({ type: 'GUESS_LETTER', payload: upperLetter });
   };
 
-  const canBuyVowelNow = (state.turnPhase === 'vowels' || state.turnPhase === 'spin') && canBuyVowel && !allVowelsRevealed;
+  const canBuyVowelNow = (state.turnPhase === 'vowels' || state.turnPhase === 'spin') && canBuyVowel && !allVowelsGuessed;
 
   const handleBuyVowel = async () => {
     if (!vowel || isRevealing || !canBuyVowelNow) return;
@@ -350,10 +348,10 @@ export function GameControls() {
           {!canBuyVowelNow && state.turnPhase !== 'vowels' && state.turnPhase !== 'spin' && (
             <div className={styles.warning}>Solo disponible antes de lanzar o tras acertar una consonante</div>
           )}
-          {allVowelsRevealed && (
-            <div className={styles.warning}>Todas las vocales ya están en el panel</div>
+          {allVowelsGuessed && (
+            <div className={styles.warning}>Ya has pedido todas las vocales</div>
           )}
-          {!allVowelsRevealed && (state.turnPhase === 'vowels' || state.turnPhase === 'spin') && !canBuyVowel && (
+          {!allVowelsGuessed && (state.turnPhase === 'vowels' || state.turnPhase === 'spin') && !canBuyVowel && (
             <div className={styles.warning}>No tienes suficiente dinero ({currentPlayer.score} €)</div>
           )}
           {canBuyVowelNow && (
