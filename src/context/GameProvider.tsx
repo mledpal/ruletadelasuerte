@@ -55,6 +55,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       return {
         ...initialState,
         players,
+        wildcardAvailable: count > 1,
       };
     }
 
@@ -204,7 +205,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         wheelValue: 0,
         lastWheelResult: null,
         turnPhase: 'spin',
-        wildcardAvailable: true,
+        wildcardAvailable: state.players.length > 1,
         guessedLetters: [],
         players: state.players.map((player) => ({
           ...player,
@@ -236,6 +237,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
     case 'RESET_GAME':
       return {
         ...initialState,
+        wildcardAvailable: state.players.length > 1,
         players: state.players.map((p) => ({ ...p, score: 0, wallet: 0, hasWildcard: false })),
       };
 
