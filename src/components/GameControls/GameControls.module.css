@@ -1,0 +1,308 @@
+.controls {
+  background: var(--color-surface);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 24px;
+  border-radius: 20px;
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-card);
+}
+
+/* ─── Panel de letras pedidas ─────────────────────────────────────── */
+.usedLetters {
+  margin-top: 16px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+}
+
+.usedLettersTitle {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+
+.letterRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.letterRow:last-child {
+  margin-bottom: 0;
+}
+
+.letterRowLabel {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  min-width: 90px;
+}
+
+.letterChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.letterChip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  letter-spacing: 0;
+  font-weight: 700;
+  border: 2px solid transparent;
+  transition: transform 0.15s;
+}
+
+.chipFound {
+  background: rgba(46, 213, 115, 0.18);
+  color: #2ed573;
+  border-color: rgba(46, 213, 115, 0.4);
+}
+
+.chipMissed {
+  background: rgba(255, 71, 87, 0.15);
+  color: #ff4757;
+  border-color: rgba(255, 71, 87, 0.35);
+  text-decoration: line-through;
+  text-decoration-color: #ff4757;
+}
+
+.phaseIndicator {
+  background: linear-gradient(135deg, rgba(124, 77, 255, 0.4) 0%, rgba(0, 180, 216, 0.3) 100%);
+  border: 1px solid rgba(124, 77, 255, 0.4);
+  color: #fff;
+  padding: 12px 16px;
+  border-radius: 12px;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  letter-spacing: 0.08em;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 20px rgba(124, 77, 255, 0.25);
+  animation: phasePulse 3s ease-in-out infinite;
+}
+
+@keyframes phasePulse {
+  0%, 100% { box-shadow: 0 4px 20px rgba(124, 77, 255, 0.25); }
+  50% { box-shadow: 0 4px 28px rgba(124, 77, 255, 0.45); }
+}
+
+.section {
+  margin-bottom: 16px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+}
+
+.sectionTitle {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  letter-spacing: 0.06em;
+  color: var(--color-text);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.label {
+  display: block;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.inputGroup {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.input {
+  flex: 1;
+  padding: 10px 14px;
+  font-size: 1.1rem;
+  font-family: var(--font-display);
+  letter-spacing: 0.1em;
+  background: rgba(0, 0, 0, 0.4);
+  color: var(--color-text);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  text-transform: uppercase;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--color-gold);
+  box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.15);
+}
+
+.button {
+  padding: 10px 24px;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  letter-spacing: 0.06em;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+  background: rgba(30, 30, 74, 0.8);
+  color: var(--color-text);
+}
+
+.button:hover:not(:disabled) {
+  background: rgba(40, 40, 100, 0.9);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.button:disabled {
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.2);
+  cursor: not-allowed;
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+.consonantButton {
+  background: linear-gradient(135deg, #0077b6, var(--color-teal));
+  border-color: rgba(0, 180, 216, 0.4);
+  color: #fff;
+}
+
+.consonantButton:hover:not(:disabled) {
+  background: linear-gradient(135deg, #005f94, #00c8f0);
+  box-shadow: var(--shadow-glow-teal);
+}
+
+.vowelButton {
+  background: linear-gradient(135deg, #c0392b, var(--color-danger));
+  border-color: rgba(255, 71, 87, 0.4);
+  color: #fff;
+}
+
+.vowelButton:hover:not(:disabled) {
+  background: linear-gradient(135deg, #a93226, #ff6b78);
+  box-shadow: 0 0 20px rgba(255, 71, 87, 0.4);
+}
+
+.solveButton {
+  background: linear-gradient(135deg, #c8a400, var(--color-gold));
+  border-color: rgba(255, 215, 0, 0.4);
+  color: #1a0e00;
+}
+
+.solveButton:hover:not(:disabled) {
+  background: linear-gradient(135deg, #e8bc00, var(--color-gold-light));
+  box-shadow: var(--shadow-glow-gold);
+}
+
+.finishButton {
+  background: linear-gradient(135deg, #0077b6, var(--color-teal));
+  border-color: rgba(0, 180, 216, 0.4);
+  color: #fff;
+  width: 100%;
+  margin-top: 10px;
+}
+
+.finishButton:hover:not(:disabled) {
+  background: linear-gradient(135deg, #005f94, #00c8f0);
+  box-shadow: var(--shadow-glow-teal);
+}
+
+.buttonGroup {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.message {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-weight: 600;
+  text-align: center;
+  font-size: 0.95rem;
+}
+
+.success {
+  background: rgba(46, 213, 115, 0.12);
+  color: var(--color-success);
+  border: 1px solid rgba(46, 213, 115, 0.3);
+}
+
+.error {
+  background: rgba(255, 71, 87, 0.12);
+  color: var(--color-danger);
+  border: 1px solid rgba(255, 71, 87, 0.3);
+}
+
+.info {
+  background: rgba(0, 180, 216, 0.1);
+  color: var(--color-teal);
+  border: 1px solid rgba(0, 180, 216, 0.3);
+}
+
+.cost {
+  display: inline-block;
+  background: rgba(255, 215, 0, 0.15);
+  color: var(--color-gold);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin-left: 10px;
+}
+
+.warning {
+  background: rgba(255, 71, 87, 0.08);
+  color: var(--color-danger);
+  border: 1px solid rgba(255, 71, 87, 0.2);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  margin-top: 8px;
+}
+
+/* ─── Sección y botón de girar ruleta ──────────────────────────────── */
+.spinSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.openWheelButton {
+  width: 100%;
+  padding: 20px;
+  font-size: 1.5rem !important;
+  letter-spacing: 0.1em;
+  background: linear-gradient(135deg, #c8a400 0%, var(--color-gold) 50%, var(--color-gold-light) 100%) !important;
+  color: #1a0e00 !important;
+  border-color: rgba(255, 215, 0, 0.5) !important;
+  box-shadow: 0 4px 24px rgba(255, 215, 0, 0.3) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+.openWheelButton:hover:not(:disabled) {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 8px 36px rgba(255, 215, 0, 0.55) !important;
+}

@@ -1,0 +1,61 @@
+.cell {
+  width: 52px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 1.9rem;
+  letter-spacing: 0.02em;
+  border-radius: 8px;
+  margin: 3px;
+  transition: all var(--transition-medium);
+  border: 2px solid transparent;
+}
+
+.hidden {
+  background: #0d0d2b;
+  color: transparent;
+  border-color: #1a1a3e;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+}
+
+.revealing {
+  background: var(--color-gold);
+  color: #1a0e00;
+  border-color: var(--color-gold-light);
+  animation: reveal 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 0 24px var(--color-gold), 0 0 48px var(--color-gold-dim);
+}
+
+.visible {
+  background: #ffffff;
+  color: #1a0e00;
+  border-color: rgba(255,255,255,0.5);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
+}
+
+.highlighted {
+  box-shadow: 0 0 20px var(--color-gold), 0 0 40px var(--color-gold-dim);
+  border-color: var(--color-gold);
+}
+
+.space {
+  background: transparent;
+  border: none;
+  width: 24px;
+}
+
+@keyframes reveal {
+  0% {
+    transform: scale(0.5) rotateY(90deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.15) rotateY(0deg);
+  }
+  100% {
+    transform: scale(1) rotateY(0deg);
+    opacity: 1;
+  }
+}

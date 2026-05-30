@@ -1,0 +1,76 @@
+:root {
+  /* Tipografía */
+  --font-display: 'Bebas Neue', cursive;
+  --font-body: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* Colores base */
+  --color-bg: #080818;
+  --color-bg-deep: #04040f;
+  --color-surface: rgba(255, 255, 255, 0.06);
+  --color-surface-hover: rgba(255, 255, 255, 0.1);
+  --color-border: rgba(255, 255, 255, 0.1);
+
+  /* Dorado */
+  --color-gold: #ffd700;
+  --color-gold-light: #ffe566;
+  --color-gold-dim: rgba(255, 215, 0, 0.3);
+
+  /* Semánticos */
+  --color-text: #e8eaf6;
+  --color-text-muted: rgba(232, 234, 246, 0.6);
+  --color-success: #2ed573;
+  --color-danger: #ff4757;
+  --color-accent: #7c4dff;
+  --color-teal: #00b4d8;
+
+  /* Sombras */
+  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --shadow-glow-gold: 0 0 30px rgba(255, 215, 0, 0.35);
+  --shadow-glow-teal: 0 0 20px rgba(0, 180, 216, 0.4);
+
+  /* Transiciones */
+  --transition-fast: 0.18s ease;
+  --transition-medium: 0.3s ease;
+
+  font-family: var(--font-body);
+  line-height: 1.5;
+  font-weight: 400;
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  color-scheme: dark;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+[data-theme="light"] {
+  --color-bg: #f0f2fa;
+  --color-bg-deep: #e2e6f5;
+  --color-surface: rgba(0, 0, 0, 0.05);
+  --color-surface-hover: rgba(0, 0, 0, 0.09);
+  --color-border: rgba(0, 0, 0, 0.12);
+  --color-gold: #b8860b;
+  --color-gold-light: #d4a017;
+  --color-gold-dim: rgba(184, 134, 11, 0.25);
+  --color-text: #1a1a2e;
+  --color-text-muted: rgba(26, 26, 46, 0.55);
+  --color-success: #1a8a4a;
+  --color-danger: #c0392b;
+  --color-accent: #5c35cc;
+  --color-teal: #0077a8;
+  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.12);
+  --shadow-glow-gold: 0 0 20px rgba(184, 134, 11, 0.3);
+  --shadow-glow-teal: 0 0 16px rgba(0, 119, 168, 0.3);
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+#root {
+  width: 100%;
+}
