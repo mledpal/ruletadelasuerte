@@ -75,7 +75,7 @@ function GameApp() {
 
   if (view === 'setup') {
     return (
-      <div className="app">
+      <div className="appSetup">
         <PlayerSetup onStart={handleInitGame} />
       </div>
     );

@@ -57,6 +57,8 @@
 /* ─── SVG de la ruleta ────────────────────────────────────────────────── */
 .wheelSvg {
   display: block;
+  width: min(520px, calc(100vw - 56px));
+  height: min(520px, calc(100vw - 56px));
   border-radius: 50%;
   transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99);
   filter:
@@ -83,9 +85,9 @@
 }
 
 .spinBtn {
-  padding: 18px 64px;
+  padding: clamp(10px, 3vw, 18px) clamp(24px, 8vw, 64px);
   font-family: var(--font-display);
-  font-size: 2rem;
+  font-size: clamp(1.4rem, 4vw, 2rem);
   letter-spacing: 0.14em;
   background: linear-gradient(135deg, #c8a400 0%, var(--color-gold) 45%, #fff8a0 60%, var(--color-gold) 100%);
   background-size: 200% 100%;
@@ -115,9 +117,9 @@
 /* ─── Resultado ───────────────────────────────────────────────────────── */
 .result {
   font-family: var(--font-display);
-  font-size: clamp(2.4rem, 5vw, 4rem);
+  font-size: clamp(2rem, 6vw, 4rem);
   letter-spacing: 0.08em;
-  padding: 14px 48px;
+  padding: clamp(8px, 2vw, 14px) clamp(20px, 6vw, 48px);
   border-radius: 18px;
   text-align: center;
   animation: resultAppear 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -158,6 +160,20 @@
 @keyframes resultAppear {
   from { opacity: 0; transform: scale(0.4); }
   to   { opacity: 1; transform: scale(1); }
+}
+
+/* ─── Responsive móvil ────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .modalInner {
+    padding: 14px 10px 18px;
+    gap: 14px;
+  }
+
+  .pointer {
+    border-left: 14px solid transparent;
+    border-right: 14px solid transparent;
+    border-top: 32px solid var(--color-gold);
+  }
 }
 
 

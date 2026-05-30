@@ -69,3 +69,34 @@
   margin-top: 8px;
   box-shadow: 0 2px 10px rgba(255, 215, 0, 0.4);
 }
+
+@media (max-width: 600px) {
+  .players {
+    gap: 8px;
+  }
+
+  .player {
+    padding: 10px 6px;
+    border-radius: 14px;
+  }
+
+  .name {
+    font-size: 0.75rem;
+    margin-bottom: 4px;
+    letter-spacing: 0.04em;
+  }
+
+  .score {
+    font-size: 1.8rem;
+  }
+
+  .wallet {
+    font-size: 0.72rem;
+    padding: 2px 6px;
+  }
+
+  .wildcard {
+    font-size: 0.72rem;
+    padding: 3px 8px;
+  }
+}

@@ -1,14 +1,14 @@
 .cell {
-  width: 52px;
-  height: 64px;
+  width: clamp(32px, 8.5vw, 52px);
+  height: clamp(40px, 10.5vw, 64px);
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: var(--font-display);
-  font-size: 1.9rem;
+  font-size: clamp(1rem, 3.8vw, 1.9rem);
   letter-spacing: 0.02em;
   border-radius: 8px;
-  margin: 3px;
+  margin: clamp(1px, 0.5vw, 3px);
   transition: all var(--transition-medium);
   border: 2px solid transparent;
 }
@@ -43,7 +43,7 @@
 .space {
   background: transparent;
   border: none;
-  width: 24px;
+  width: clamp(10px, 2.5vw, 24px);
 }
 
 @keyframes reveal {

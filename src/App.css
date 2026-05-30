@@ -25,6 +25,11 @@ body {
   padding: 24px 20px;
 }
 
+.appSetup {
+  width: 100%;
+  min-height: 100vh;
+}
+
 .header {
   display: flex;
   align-items: center;
@@ -127,7 +132,6 @@ body {
   .themeToggle {
     position: static;
     transform: none;
-    margin-bottom: 8px;
   }
 
   .themeToggle:hover {
@@ -137,12 +141,45 @@ body {
   .managePhrases {
     position: static;
     transform: none;
-    margin-top: 12px;
     font-size: 0.9rem;
     padding: 8px 16px;
   }
 
   .managePhrases:hover {
     transform: translateY(-2px);
+  }
+
+  .header {
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .header h1 {
+    flex: 1 1 100%;
+    text-align: center;
+    order: -1;
+  }
+}
+
+@media (max-width: 600px) {
+  .app {
+    padding: 10px 10px;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .header h1 {
+    flex: none;
+    order: 0;
+  }
+
+  .main {
+    gap: 12px;
   }
 }
