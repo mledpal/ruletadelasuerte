@@ -58,13 +58,12 @@ function UsedLetters({ guessed, cells }: UsedLettersProps) {
   );
 }
 
-type DialogType = 'letter-fail' | 'wheel-special' | null;
+type DialogType = 'letter-fail' | 'wheel-special' | 'no-money-vowel' | null;
 
 export function GameControls() {
   const { state, dispatch } = useGame();
   const { revealLetter, revealAll, isRevealing } = useLetterReveal();
-  const [consonant, setConsonant] = useState('');
-  const [vowel, setVowel] = useState('');
+  const [letter, setLetter] = useState('');
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' | 'info' } | null>(null);
   const [dialogType, setDialogType] = useState<DialogType>(null);
   const [solvePhrase, setSolvePhrase] = useState('');
@@ -116,91 +115,93 @@ export function GameControls() {
     }
   }, [currentPlayer.hasWildcard, currentPlayer.id, dispatch, handleChangeTurn]);
 
-  const handleGuessConsonant = async () => {
-    if (!consonant || isRevealing || state.turnPhase !== 'consonant') return;
+  const handleGuessLetter = async () => {
+    if (!letter || isRevealing) return;
 
-    const upperLetter = consonant.toUpperCase();
+    const upperLetter = letter.toUpperCase();
+    setLetter('');
+
     if (VOWELS.includes(upperLetter)) {
-      setMessage({ text: 'Las vocales se compran, no se prueban', type: 'error' });
-      return;
-    }
+      // ── Ruta vocal ──────────────────────────────────────────────
+      const canBuyPhase = state.turnPhase === 'vowels' || state.turnPhase === 'spin';
+      if (!canBuyPhase) {
+        setMessage({ text: 'Las vocales solo se pueden comprar antes de girar o tras acertar una consonante', type: 'error' });
+        return;
+      }
+      if (allVowelsGuessed) {
+        setMessage({ text: 'Ya has pedido todas las vocales', type: 'error' });
+        return;
+      }
+      if (!canBuyVowel) {
+        setDialogType('no-money-vowel');
+        return;
+      }
 
-    const result = await revealLetter(upperLetter);
+      dispatch({ type: 'DEDUCT_SCORE', payload: { playerId: currentPlayer.id, amount: VOWEL_COST } });
+      const result = await revealLetter(upperLetter);
 
-    if (result.success) {
-      if (pendingSpecialResult === 'COMODIN') {
-        dispatch({ type: 'AWARD_WILDCARD', payload: currentPlayer.id });
+      if (result.success) {
         setMessage({
-          text: `¡COMODÍN GANADO! ${result.count} aparición(es). El comodín ahora es tuyo y se reemplaza por 100€.`,
+          text: `Vocal comprada: ${result.count} aparición(es). -${VOWEL_COST} €. Puedes seguir comprando vocales.`,
           type: 'success',
         });
-        setPendingSpecialResult(null);
       } else {
-        const winnings = state.wheelValue * result.count;
-        dispatch({ type: 'ADD_SCORE', payload: { playerId: currentPlayer.id, amount: winnings } });
-        setMessage({
-          text: allVowelsGuessed
-            ? `¡Correcto! ${result.count} aparición(es). +${winnings} €`
-            : `¡Correcto! ${result.count} aparición(es). +${winnings} €. Ahora puedes comprar vocales.`,
-          type: 'success',
-        });
+        setFailedLetterType('vowel');
+        setMessage({ text: `La vocal no está presente. -${VOWEL_COST} €`, type: 'error' });
+        if (state.turnPhase === 'vowels') {
+          if (currentPlayer.hasWildcard) {
+            setDialogType('letter-fail');
+          } else {
+            dispatch({ type: 'SET_TURN_PHASE', payload: 'next-action' });
+            handleChangeTurn();
+          }
+        }
       }
-      dispatch({ type: 'SET_TURN_PHASE', payload: allVowelsGuessed ? 'next-action' : 'vowels' });
+      dispatch({ type: 'GUESS_LETTER', payload: upperLetter });
     } else {
-      setFailedLetterType('consonant');
-      if (pendingSpecialResult === 'COMODIN') {
-        setMessage({ text: 'La letra no está presente. El comodín sigue en la ruleta.', type: 'error' });
-        setPendingSpecialResult(null);
-      } else {
-        setMessage({ text: 'La letra no está presente', type: 'error' });
+      // ── Ruta consonante ─────────────────────────────────────────
+      if (state.turnPhase !== 'consonant') {
+        setMessage({ text: 'Debes girar la ruleta primero para poder decir una consonante', type: 'error' });
+        return;
       }
-      if (currentPlayer.hasWildcard) {
-        setDialogType('letter-fail');
+
+      const result = await revealLetter(upperLetter);
+
+      if (result.success) {
+        if (pendingSpecialResult === 'COMODIN') {
+          dispatch({ type: 'AWARD_WILDCARD', payload: currentPlayer.id });
+          setMessage({
+            text: `¡COMODÍN GANADO! ${result.count} aparición(es). El comodín ahora es tuyo y se reemplaza por 100€.`,
+            type: 'success',
+          });
+          setPendingSpecialResult(null);
+        } else {
+          const winnings = state.wheelValue * result.count;
+          dispatch({ type: 'ADD_SCORE', payload: { playerId: currentPlayer.id, amount: winnings } });
+          setMessage({
+            text: allVowelsGuessed
+              ? `¡Correcto! ${result.count} aparición(es). +${winnings} €`
+              : `¡Correcto! ${result.count} aparición(es). +${winnings} €. Ahora puedes comprar vocales.`,
+            type: 'success',
+          });
+        }
+        dispatch({ type: 'SET_TURN_PHASE', payload: allVowelsGuessed ? 'next-action' : 'vowels' });
       } else {
-        handleChangeTurn();
-      }
-    }
-
-    setConsonant('');
-    dispatch({ type: 'GUESS_LETTER', payload: upperLetter });
-  };
-
-  const canBuyVowelNow = (state.turnPhase === 'vowels' || state.turnPhase === 'spin') && canBuyVowel && !allVowelsGuessed;
-
-  const handleBuyVowel = async () => {
-    if (!vowel || isRevealing || !canBuyVowelNow) return;
-
-    const upperLetter = vowel.toUpperCase();
-    if (!VOWELS.includes(upperLetter)) {
-      setMessage({ text: 'Solo puedes comprar vocales', type: 'error' });
-      return;
-    }
-
-    dispatch({ type: 'DEDUCT_SCORE', payload: { playerId: currentPlayer.id, amount: VOWEL_COST } });
-
-    const result = await revealLetter(upperLetter);
-
-    if (result.success) {
-      setMessage({
-        text: `Vocal comprada: ${result.count} aparición(es). -${VOWEL_COST} €. Puedes seguir comprando vocales.`,
-        type: 'success',
-      });
-    } else {
-      setFailedLetterType('vowel');
-      setMessage({ text: `La vocal no está presente. -${VOWEL_COST} €`, type: 'error' });
-      // En fase 'spin' el fallo no cambia de turno; solo en 'vowels'
-      if (state.turnPhase === 'vowels') {
+        setFailedLetterType('consonant');
+        if (pendingSpecialResult === 'COMODIN') {
+          setMessage({ text: 'La letra no está presente. El comodín sigue en la ruleta.', type: 'error' });
+          setPendingSpecialResult(null);
+        } else {
+          setMessage({ text: 'La letra no está presente', type: 'error' });
+        }
         if (currentPlayer.hasWildcard) {
           setDialogType('letter-fail');
         } else {
-          dispatch({ type: 'SET_TURN_PHASE', payload: 'next-action' });
           handleChangeTurn();
         }
       }
+      dispatch({ type: 'GUESS_LETTER', payload: upperLetter });
     }
-
-    setVowel('');
-    dispatch({ type: 'GUESS_LETTER', payload: upperLetter });
   };
 
   const handleFinishVowels = () => {
@@ -209,6 +210,10 @@ export function GameControls() {
   };
 
   const handleWildcardConfirm = () => {
+    if (dialogType === 'no-money-vowel') {
+      setDialogType(null);
+      return;
+    }
     dispatch({ type: 'USE_WILDCARD', payload: currentPlayer.id });
     if (pendingSpecialResult === 'QUIEBRA') {
       dispatch({ type: 'BANKRUPT', payload: currentPlayer.id });
@@ -220,8 +225,12 @@ export function GameControls() {
   };
 
   const handleWildcardCancel = () => {
+    if (dialogType === 'no-money-vowel') {
+      setDialogType(null);
+      return;
+    }
     setDialogType(null);
-    
+
     if (pendingSpecialResult) {
       if (pendingSpecialResult === 'QUIEBRA') {
         dispatch({ type: 'BANKRUPT', payload: currentPlayer.id });
@@ -256,6 +265,9 @@ export function GameControls() {
   };
 
   const getDialogMessage = () => {
+    if (dialogType === 'no-money-vowel') {
+      return `No tienes suficiente dinero (${currentPlayer.score} €). Necesitas al menos ${VOWEL_COST} € para comprar una vocal.`;
+    }
     if (dialogType === 'wheel-special' && pendingSpecialResult) {
       return `¡${pendingSpecialResult === 'QUIEBRA' ? 'QUIEBRA' : 'PIERDE TURNO'}! ¿Deseas utilizar tu comodín para mantener el turno?`;
     }
@@ -308,76 +320,50 @@ export function GameControls() {
 
         <div className={styles.section}>
           <div className={styles.sectionTitle}>
-            Probar Consonante
-            {state.wheelValue > 0 && <span className={styles.cost}>{state.wheelValue} € por letra</span>}
+            {VOWELS.includes(letter.toUpperCase()) && letter
+              ? <>¡Vocal! <span className={styles.cost}>{VOWEL_COST} €</span></>
+              : state.wheelValue > 0 && letter
+                ? <>Consonante <span className={styles.cost}>{state.wheelValue} € por letra</span></>
+                : 'Escribe una letra'
+            }
           </div>
-          {state.turnPhase === 'spin' && (
-            <div className={styles.warning}>Debes girar la ruleta primero</div>
+
+          {state.turnPhase === 'spin' && !allVowelsGuessed && (
+            <div className={styles.info}>Puedes comprar vocales ({VOWEL_COST} € c/u) o girar la ruleta</div>
           )}
           {state.turnPhase === 'consonant' && (
-            <div className={styles.info}>Di una consonante</div>
+            <div className={styles.info}>Debes decir una consonante ({state.wheelValue} € por letra)</div>
           )}
           {state.turnPhase === 'vowels' && (
-            <div className={styles.info}>Ya has dicho tu consonante. Ahora puedes comprar vocales.</div>
+            <div className={styles.info}>Puedes comprar vocales. Tienes {currentPlayer.score} €</div>
           )}
           {state.turnPhase === 'next-action' && (
-            <div className={styles.info}>Ya has dicho tu consonante. Gira la ruleta de nuevo o resuelve.</div>
+            <div className={styles.info}>Gira de nuevo o resuelve el panel</div>
           )}
-          <div className={styles.inputGroup}>
-            <input
-              type="text"
-              value={consonant}
-              onChange={(e) => setConsonant(e.target.value.slice(0, 1))}
-              className={styles.input}
-              placeholder="Ej: R, S, T..."
-              maxLength={1}
-              disabled={isRevealing || state.turnPhase !== 'consonant'}
-            />
-            <button
-              onClick={handleGuessConsonant}
-              className={`${styles.button} ${styles.consonantButton}`}
-              disabled={isRevealing || !consonant || state.turnPhase !== 'consonant'}
-            >
-              Probar Consonante
-            </button>
-          </div>
-        </div>
-
-        <div className={styles.section}>
-          <div className={styles.sectionTitle}>
-            Comprar Vocal
-            <span className={styles.cost}>{VOWEL_COST} €</span>
-          </div>
-          {!canBuyVowelNow && state.turnPhase !== 'vowels' && state.turnPhase !== 'spin' && (
-            <div className={styles.warning}>Solo disponible antes de lanzar o tras acertar una consonante</div>
-          )}
-          {allVowelsGuessed && (
+          {allVowelsGuessed && state.turnPhase !== 'consonant' && (
             <div className={styles.warning}>Ya has pedido todas las vocales</div>
           )}
-          {!allVowelsGuessed && (state.turnPhase === 'vowels' || state.turnPhase === 'spin') && !canBuyVowel && (
-            <div className={styles.warning}>No tienes suficiente dinero ({currentPlayer.score} €)</div>
-          )}
-          {canBuyVowelNow && (
-            <div className={styles.info}>Tienes {currentPlayer.score} €. Puedes comprar tantas vocales como quieras.</div>
-          )}
+
           <div className={styles.inputGroup}>
             <input
               type="text"
-              value={vowel}
-              onChange={(e) => setVowel(e.target.value.slice(0, 1))}
+              value={letter}
+              onChange={(e) => setLetter(e.target.value.slice(0, 1))}
+              onKeyDown={(e) => e.key === 'Enter' && handleGuessLetter()}
               className={styles.input}
-              placeholder="Ej: A, E, I, O, U"
+              placeholder="Escribe una letra..."
               maxLength={1}
-              disabled={isRevealing || !canBuyVowelNow}
+              disabled={isRevealing}
             />
             <button
-              onClick={handleBuyVowel}
-              className={`${styles.button} ${styles.vowelButton}`}
-              disabled={isRevealing || !vowel || !canBuyVowelNow}
+              onClick={handleGuessLetter}
+              className={`${styles.button} ${VOWELS.includes(letter.toUpperCase()) && letter ? styles.vowelButton : styles.consonantButton}`}
+              disabled={isRevealing || !letter}
             >
-              Comprar Vocal
+              Probar letra
             </button>
           </div>
+
           {state.turnPhase === 'vowels' && (
             <button
               onClick={handleFinishVowels}
@@ -431,6 +417,7 @@ export function GameControls() {
             message={getDialogMessage()}
             onConfirm={handleWildcardConfirm}
             onCancel={handleWildcardCancel}
+            singleAction={dialogType === 'no-money-vowel'}
           />
         )}
       </div>
