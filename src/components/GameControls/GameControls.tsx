@@ -210,10 +210,13 @@ export function GameControls() {
 
   const handleWildcardConfirm = () => {
     dispatch({ type: 'USE_WILDCARD', payload: currentPlayer.id });
+    if (pendingSpecialResult === 'QUIEBRA') {
+      dispatch({ type: 'BANKRUPT', payload: currentPlayer.id });
+    }
     setDialogType(null);
     setFailedLetterType(null);
     setPendingSpecialResult(null);
-    setMessage({ text: 'Comodín usado. Puedes continuar', type: 'info' });
+    setMessage({ text: 'Comodín usado. Puedes continuar tu turno.', type: 'info' });
   };
 
   const handleWildcardCancel = () => {
