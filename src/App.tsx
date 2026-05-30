@@ -8,12 +8,13 @@ import { WinnerModal } from './components/WinnerModal/WinnerModal';
 import { useGame } from './context/GameContext';
 import { useTheme } from './hooks/useTheme';
 import { usePhrases } from './hooks/usePhrases';
+import { PlayerSetup } from './components/PlayerSetup/PlayerSetup';
 import './App.css';
 
-type AppView = 'game' | 'phrases';
+type AppView = 'setup' | 'game' | 'phrases';
 
 function GameApp() {
-  const [view, setView] = useState<AppView>('game');
+  const [view, setView] = useState<AppView>('setup');
   const { state, dispatch } = useGame();
   const { theme, toggle: toggleTheme } = useTheme();
   const { phrases, addPhrase, deletePhrase, editPhrase } = usePhrases();
@@ -58,16 +59,31 @@ function GameApp() {
     }
   }, [state.roundComplete, state.gameComplete, handleNextRound]);
 
+  const handleInitGame = useCallback((playerCount: number) => {
+    usedRef.current = new Set();
+    dispatch({ type: 'INIT_GAME', payload: playerCount });
+    pickPhrase(phrases);
+    setView('game');
+  }, [phrases, dispatch, pickPhrase]);
+
   const handleStartGame = useCallback(() => {
     usedRef.current = new Set();
     dispatch({ type: 'RESET_GAME' });
     pickPhrase(phrases);
   }, [phrases, dispatch, pickPhrase]);
 
+  if (view === 'setup') {
+    return (
+      <div className="app">
+        <PlayerSetup onStart={handleInitGame} />
+      </div>
+    );
+  }
+
   return (
     <div className="app">
       {state.gameComplete && (
-        <WinnerModal players={state.players} onNewGame={handleStartGame} />
+        <WinnerModal players={state.players} onNewGame={() => setView('setup')} />
       )}
       <header className="header">
         <button className="themeToggle" onClick={toggleTheme} title="Cambiar tema">

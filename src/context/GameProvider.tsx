@@ -43,6 +43,21 @@ const initialState: GameState = {
 
 function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
+    case 'INIT_GAME': {
+      const count = action.payload;
+      const players = Array.from({ length: count }, (_, i) => ({
+        id: i,
+        name: `Jugador ${i + 1}`,
+        score: 0,
+        wallet: 0,
+        hasWildcard: false,
+      }));
+      return {
+        ...initialState,
+        players,
+      };
+    }
+
     case 'SET_PHRASE':
       return {
         ...state,

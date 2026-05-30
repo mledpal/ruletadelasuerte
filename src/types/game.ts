@@ -59,6 +59,7 @@ export interface GameState {
 }
 
 export type GameAction =
+  | { type: 'INIT_GAME'; payload: number }
   | { type: 'SET_PHRASE'; payload: { phrase: string; hint: string; category: string } }
   | { type: 'UPDATE_CELL'; payload: { id: string; state: CellState } }
   | { type: 'SET_REVEALING'; payload: boolean }
