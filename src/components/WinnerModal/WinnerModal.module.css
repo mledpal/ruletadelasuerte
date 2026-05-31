@@ -152,6 +152,34 @@
   color: #9a7a50;
 }
 
+/* ── Bote result ─────────────────────────────── */
+
+.boteResult {
+  margin: 24px 0 12px;
+  padding: 14px 20px;
+  border-radius: 12px;
+  font-size: 1.05rem;
+}
+
+.boteWon {
+  display: block;
+  color: #ff69b4;
+  border: 2px solid rgba(255, 20, 147, 0.5);
+  background: rgba(255, 20, 147, 0.12);
+  padding: 12px 16px;
+  border-radius: 10px;
+  box-shadow: 0 0 24px rgba(255, 20, 147, 0.3);
+}
+
+.boteUnclaimed {
+  display: block;
+  color: #aaa;
+  border: 1px solid rgba(150, 150, 150, 0.3);
+  background: rgba(100, 100, 100, 0.1);
+  padding: 12px 16px;
+  border-radius: 10px;
+}
+
 /* ── Button ──────────────────────────────────── */
 
 .button {

@@ -58,7 +58,7 @@ function UsedLetters({ guessed, cells }: UsedLettersProps) {
   );
 }
 
-type DialogType = 'letter-fail' | 'wheel-special' | 'no-money-vowel' | null;
+type DialogType = 'letter-fail' | 'wheel-special' | 'no-money-vowel' | 'bote-fail' | null;
 
 export function GameControls() {
   const { state, dispatch } = useGame();
@@ -68,7 +68,8 @@ export function GameControls() {
   const [dialogType, setDialogType] = useState<DialogType>(null);
   const [solvePhrase, setSolvePhrase] = useState('');
   const [failedLetterType, setFailedLetterType] = useState<'consonant' | 'vowel' | null>(null);
-  const [pendingSpecialResult, setPendingSpecialResult] = useState<'QUIEBRA' | 'PIERDE_TURNO' | 'COMODIN' | null>(null);
+  const [pendingSpecialResult, setPendingSpecialResult] = useState<'QUIEBRA' | 'PIERDE_TURNO' | 'COMODIN' | 'BOTE' | null>(null);
+  const [pendingBote, setPendingBote] = useState(false);
 
   const [showWheelModal, setShowWheelModal] = useState(false);
 
@@ -82,6 +83,7 @@ export function GameControls() {
 
   const handleChangeTurn = useCallback(async () => {
     playTransition();
+    setPendingBote(false);
     await new Promise((resolve) => setTimeout(resolve, state.config.turnChangeDelay));
     dispatch({ type: 'NEXT_TURN' });
     setMessage(null);
@@ -89,6 +91,7 @@ export function GameControls() {
   }, [dispatch, state.config.turnChangeDelay]);
 
   const handleWheelResult = useCallback((result: WheelResult) => {
+    setPendingBote(false);
     if (result === 'QUIEBRA' || result === 'PIERDE_TURNO') {
       setPendingSpecialResult(result);
       
@@ -110,10 +113,14 @@ export function GameControls() {
       setPendingSpecialResult(result);
       setMessage({ text: '¡COMODÍN! Si aciertas la consonante, ganarás el comodín', type: 'info' });
       dispatch({ type: 'SET_TURN_PHASE', payload: 'consonant' });
+    } else if (result === 'BOTE') {
+      setPendingSpecialResult('BOTE');
+      setMessage({ text: `¡BOTE! Acierte una consonante para optar al premio de ${state.boteAmount.toLocaleString('es-ES')}€`, type: 'info' });
+      dispatch({ type: 'SET_TURN_PHASE', payload: 'consonant' });
     } else {
       dispatch({ type: 'SET_TURN_PHASE', payload: 'consonant' });
     }
-  }, [currentPlayer.hasWildcard, currentPlayer.id, dispatch, handleChangeTurn]);
+  }, [currentPlayer.hasWildcard, currentPlayer.id, dispatch, handleChangeTurn, state.boteAmount]);
 
   const handleGuessLetter = async () => {
     if (!letter || isRevealing) return;
@@ -175,6 +182,13 @@ export function GameControls() {
             type: 'success',
           });
           setPendingSpecialResult(null);
+        } else if (pendingSpecialResult === 'BOTE') {
+          setPendingBote(true);
+          setPendingSpecialResult(null);
+          setMessage({
+            text: `¡Consonante correcta! ${result.count} aparición(es). Resuelve el panel para ganar el BOTE de ${state.boteAmount.toLocaleString('es-ES')}€`,
+            type: 'success',
+          });
         } else {
           const winnings = state.wheelValue * result.count;
           dispatch({ type: 'ADD_SCORE', payload: { playerId: currentPlayer.id, amount: winnings } });
@@ -191,13 +205,21 @@ export function GameControls() {
         if (pendingSpecialResult === 'COMODIN') {
           setMessage({ text: 'La letra no está presente. El comodín sigue en la ruleta.', type: 'error' });
           setPendingSpecialResult(null);
+        } else if (pendingSpecialResult === 'BOTE') {
+          setMessage({ text: 'La letra no está presente. Has perdido la opción al BOTE.', type: 'error' });
+          setPendingSpecialResult(null);
+          if (currentPlayer.hasWildcard) {
+            setDialogType('bote-fail');
+          } else {
+            handleChangeTurn();
+          }
         } else {
           setMessage({ text: 'La letra no está presente', type: 'error' });
-        }
-        if (currentPlayer.hasWildcard) {
-          setDialogType('letter-fail');
-        } else {
-          handleChangeTurn();
+          if (currentPlayer.hasWildcard) {
+            setDialogType('letter-fail');
+          } else {
+            handleChangeTurn();
+          }
         }
       }
       dispatch({ type: 'GUESS_LETTER', payload: upperLetter });
@@ -214,6 +236,15 @@ export function GameControls() {
       setDialogType(null);
       return;
     }
+    if (dialogType === 'bote-fail') {
+      dispatch({ type: 'USE_WILDCARD', payload: currentPlayer.id });
+      dispatch({ type: 'RESET_WHEEL' });
+      dispatch({ type: 'SET_TURN_PHASE', payload: 'spin' });
+      setDialogType(null);
+      setFailedLetterType(null);
+      setMessage({ text: 'Comodín usado. Gira de nuevo para intentar el BOTE.', type: 'info' });
+      return;
+    }
     dispatch({ type: 'USE_WILDCARD', payload: currentPlayer.id });
     if (pendingSpecialResult === 'QUIEBRA') {
       dispatch({ type: 'BANKRUPT', payload: currentPlayer.id });
@@ -227,6 +258,11 @@ export function GameControls() {
   const handleWildcardCancel = () => {
     if (dialogType === 'no-money-vowel') {
       setDialogType(null);
+      return;
+    }
+    if (dialogType === 'bote-fail') {
+      setDialogType(null);
+      handleChangeTurn();
       return;
     }
     setDialogType(null);
@@ -254,9 +290,16 @@ export function GameControls() {
       playSuccess();
       dispatch({ type: 'SET_REVEALING', payload: true });
       await revealAll();
-      dispatch({ type: 'COMPLETE_ROUND', payload: currentPlayer.id });
-      setMessage({ text: `¡Correcto! ${currentPlayer.name} gana la ronda y acumula ${currentPlayer.score}€ en su cartera`, type: 'success' });
+      if (pendingBote) {
+        dispatch({ type: 'WIN_BOTE', payload: currentPlayer.id });
+        setMessage({ text: `¡BOTE GANADO! ${currentPlayer.name} se lleva ${state.boteAmount.toLocaleString('es-ES')}€ del bote`, type: 'success' });
+        setPendingBote(false);
+      } else {
+        dispatch({ type: 'COMPLETE_ROUND', payload: currentPlayer.id });
+        setMessage({ text: `¡Correcto! ${currentPlayer.name} gana la ronda y acumula ${currentPlayer.score}€ en su cartera`, type: 'success' });
+      }
     } else {
+      setPendingBote(false);
       setMessage({ text: 'Respuesta incorrecta', type: 'error' });
       handleChangeTurn();
     }
@@ -268,6 +311,9 @@ export function GameControls() {
     if (dialogType === 'no-money-vowel') {
       return `No tienes suficiente dinero (${currentPlayer.score} €). Necesitas al menos ${VOWEL_COST} € para comprar una vocal.`;
     }
+    if (dialogType === 'bote-fail') {
+      return `¡Has fallado la consonante del BOTE! ¿Deseas usar tu comodín para volver a girar la ruleta?`;
+    }
     if (dialogType === 'wheel-special' && pendingSpecialResult) {
       return `¡${pendingSpecialResult === 'QUIEBRA' ? 'QUIEBRA' : 'PIERDE TURNO'}! ¿Deseas utilizar tu comodín para mantener el turno?`;
     }
@@ -275,6 +321,7 @@ export function GameControls() {
   };
 
   const getPhaseIndicator = () => {
+    if (pendingBote) return '🏆 ¡Resuelve el panel para ganar el BOTE!';
     switch (state.turnPhase) {
       case 'spin':
         return 'Fase: Girar la ruleta · comprar vocales · o resolver';
@@ -289,6 +336,11 @@ export function GameControls() {
     }
   };
 
+  const isBoteRound =
+    state.boteRoundEnabled &&
+    state.currentRound === state.totalRounds &&
+    state.players.length >= 2;
+
   return (
     <>
       {showWheelModal && (
@@ -299,6 +351,11 @@ export function GameControls() {
         />
       )}
       <div className={styles.controls}>
+        {isBoteRound && (
+          <div className={styles.boteBanner}>
+            🏆 RONDA DEL BOTE — {state.boteAmount.toLocaleString('es-ES')}€
+          </div>
+        )}
         <div className={styles.phaseIndicator}>
           {getPhaseIndicator()}
         </div>

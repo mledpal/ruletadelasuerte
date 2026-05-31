@@ -117,11 +117,11 @@ function GameApp() {
     setView('setup');
   }, [dispatch]);
 
-  const handleInitGame = useCallback((playerCount: number) => {
+  const handleInitGame = useCallback((playerCount: number, rounds: number, wildcardEnabled: boolean, boteRoundEnabled: boolean) => {
     localStorage.removeItem(VIEW_KEY);
     localStorage.removeItem(USED_KEY);
     usedRef.current = new Set();
-    dispatch({ type: 'INIT_GAME', payload: playerCount });
+    dispatch({ type: 'INIT_GAME', payload: { playerCount, rounds, wildcardEnabled, boteRoundEnabled } });
     pickPhrase(phrases);
     setView('game');
   }, [phrases, dispatch, pickPhrase]);
@@ -167,7 +167,12 @@ function GameApp() {
   return (
     <div className="app">
       {state.gameComplete && (
-        <WinnerModal players={state.players} onNewGame={() => setView('setup')} />
+        <WinnerModal
+          players={state.players}
+          boteAmount={state.boteAmount}
+          boteWinnerId={state.boteWinnerId ?? null}
+          onNewGame={() => setView('setup')}
+        />
       )}
       <header className="header">
         <button className="themeToggle" onClick={toggleTheme} title="Cambiar tema">

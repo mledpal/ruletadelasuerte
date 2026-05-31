@@ -141,6 +141,77 @@
   background: rgba(255, 215, 0, 0.06);
 }
 
+.sectionLabel {
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  margin-bottom: 14px;
+}
+
+.gridRounds {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.checkboxWrapper {
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: center;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 12px 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.checkboxLabel:hover {
+  border-color: var(--color-gold-dim);
+  background: rgba(255, 215, 0, 0.06);
+}
+
+.checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--color-gold);
+}
+
+.checkboxText {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text);
+  letter-spacing: 0.02em;
+}
+
+.backLink {
+  margin-top: 12px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.backLink:hover {
+  color: var(--color-gold);
+  background: rgba(255, 215, 0, 0.06);
+}
+
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(32px) scale(0.97); }
   to { opacity: 1; transform: translateY(0) scale(1); }

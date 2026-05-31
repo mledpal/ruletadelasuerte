@@ -146,6 +146,13 @@
   box-shadow: 0 0 36px rgba(255, 215, 0, 0.35);
 }
 
+.boteResult {
+  background: rgba(255, 20, 147, 0.15);
+  color: #ff1493;
+  border: 2px solid rgba(255, 20, 147, 0.55);
+  box-shadow: 0 0 48px rgba(255, 20, 147, 0.5);
+}
+
 /* ─── Animaciones ─────────────────────────────────────────────────────── */
 @keyframes overlayIn {
   from { opacity: 0; }

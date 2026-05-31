@@ -7,7 +7,7 @@ export interface Phrase {
 
 export type CellState = 'hidden' | 'revealing' | 'visible' | 'highlighted';
 
-export type WheelResult = number | 'QUIEBRA' | 'PIERDE_TURNO' | 'COMODIN';
+export type WheelResult = number | 'QUIEBRA' | 'PIERDE_TURNO' | 'COMODIN' | 'BOTE';
 
 export type TurnPhase = 'spin' | 'consonant' | 'vowels' | 'next-action';
 
@@ -55,17 +55,21 @@ export interface GameState {
   totalRounds: number;
   gameComplete: boolean;
   wildcardAvailable: boolean;
+  wildcardEnabled: boolean;
   config: GameConfig;
   guessedLetters: string[];
+  boteAmount: number;
+  boteWinnerId: number | null;
+  boteRoundEnabled: boolean;
 }
 
 export type GameAction =
-  | { type: 'INIT_GAME'; payload: number }
+  | { type: 'INIT_GAME'; payload: { playerCount: number; rounds: number; wildcardEnabled: boolean; boteRoundEnabled: boolean } }
   | { type: 'SET_PHRASE'; payload: { phrase: string; hint: string; category: string } }
   | { type: 'UPDATE_CELL'; payload: { id: string; state: CellState } }
   | { type: 'SET_REVEALING'; payload: boolean }
   | { type: 'SPIN_WHEEL'; payload: number }
-  | { type: 'SPIN_WHEEL_SPECIAL'; payload: 'QUIEBRA' | 'PIERDE_TURNO' | 'COMODIN' }
+  | { type: 'SPIN_WHEEL_SPECIAL'; payload: 'QUIEBRA' | 'PIERDE_TURNO' | 'COMODIN' | 'BOTE' }
   | { type: 'RESET_WHEEL' }
   | { type: 'ADD_SCORE'; payload: { playerId: number; amount: number } }
   | { type: 'DEDUCT_SCORE'; payload: { playerId: number; amount: number } }
@@ -79,4 +83,5 @@ export type GameAction =
   | { type: 'SET_TURN_PHASE'; payload: TurnPhase }
   | { type: 'REVEAL_ALL' }
   | { type: 'RESET_GAME' }
-  | { type: 'GUESS_LETTER'; payload: string };
+  | { type: 'GUESS_LETTER'; payload: string }
+  | { type: 'WIN_BOTE'; payload: number };

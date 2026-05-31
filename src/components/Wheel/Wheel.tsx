@@ -17,10 +17,20 @@ export function Wheel({ onResult, onClose, autoSpin }: WheelProps) {
   const [isSpinning, setIsSpinning] = useState(false);
   const [lastResult, setLastResult] = useState<WheelResult | null>(null);
 
+  const isBoteRound =
+    state.boteRoundEnabled &&
+    state.currentRound === state.totalRounds &&
+    state.players.length >= 2;
+
   const WHEEL_SEGMENTS = useMemo(() => {
     const comodinSlot = state.wildcardAvailable
       ? { value: 'COMODIN' as WheelResult, color: '#ffd700', label: 'COMODÍN' }
       : { value: 400 as WheelResult,       color: '#ffd700', label: '400€'    };
+
+    const boteLabel = `¡BOTE!\n${state.boteAmount.toLocaleString('es-ES')}€`;
+    const boteSlot = isBoteRound
+      ? { value: 'BOTE' as WheelResult, color: '#ff1493', label: boteLabel }
+      : { value: 100 as WheelResult,    color: '#e63946', label: '100€'    };
 
     return [
       { value: 'QUIEBRA' as WheelResult,     color: '#1a1a2e', label: 'QUIEBRA'       }, //  0
@@ -33,7 +43,7 @@ export function Wheel({ onResult, onClose, autoSpin }: WheelProps) {
       { value: 'PIERDE_TURNO' as WheelResult, color: '#e9ecef', label: 'PIERDE\nTURNO' }, //  7
       { value: 25,                            color: '#70e000', label: '25€'           }, //  8
       { value: 400,                           color: '#f77f00', label: '400€'          }, //  9
-      { value: 100,                           color: '#e63946', label: '100€'          }, // 10
+      boteSlot,                                                                           // 10
       { value: 75,                            color: '#ffd60a', label: '75€'           }, // 11
       { value: 'QUIEBRA' as WheelResult,     color: '#1a1a2e', label: 'QUIEBRA'       }, // 12
       { value: 200,                           color: '#0096c7', label: '200€'          }, // 13
@@ -48,7 +58,7 @@ export function Wheel({ onResult, onClose, autoSpin }: WheelProps) {
       comodinSlot,                                                                        // 22
       { value: 'PIERDE_TURNO' as WheelResult, color: '#e9ecef', label: 'PIERDE\nTURNO' }, // 23
     ];
-  }, [state.wildcardAvailable]);
+  }, [state.wildcardAvailable, state.boteRoundEnabled, state.currentRound, state.totalRounds, state.players.length, state.boteAmount, isBoteRound]);
 
   const segmentCount = WHEEL_SEGMENTS.length;
   const segmentAngle = 360 / segmentCount;
@@ -97,7 +107,7 @@ export function Wheel({ onResult, onClose, autoSpin }: WheelProps) {
       if (typeof selected.value === 'number') {
         dispatch({ type: 'SPIN_WHEEL', payload: selected.value });
       } else {
-        dispatch({ type: 'SPIN_WHEEL_SPECIAL', payload: selected.value as 'QUIEBRA' | 'PIERDE_TURNO' | 'COMODIN' });
+        dispatch({ type: 'SPIN_WHEEL_SPECIAL', payload: selected.value as 'QUIEBRA' | 'PIERDE_TURNO' | 'COMODIN' | 'BOTE' });
       }
       setLastResult(selected.value);
       setIsSpinning(false);
@@ -116,9 +126,10 @@ export function Wheel({ onResult, onClose, autoSpin }: WheelProps) {
 
   const getResultText = () => {
     if (!lastResult) return '';
-    if (lastResult === 'QUIEBRA')     return '¡QUIEBRA!';
+    if (lastResult === 'QUIEBRA')      return '¡QUIEBRA!';
     if (lastResult === 'PIERDE_TURNO') return '¡PIERDE TURNO!';
-    if (lastResult === 'COMODIN')     return '¡COMODÍN!';
+    if (lastResult === 'COMODIN')      return '¡COMODÍN!';
+    if (lastResult === 'BOTE')         return '¡BOTE!';
     return `${lastResult} €`;
   };
 
@@ -126,6 +137,7 @@ export function Wheel({ onResult, onClose, autoSpin }: WheelProps) {
     if (!lastResult) return '';
     if (lastResult === 'QUIEBRA' || lastResult === 'PIERDE_TURNO') return styles.negativeResult;
     if (lastResult === 'COMODIN') return styles.wildcardResult;
+    if (lastResult === 'BOTE')    return styles.boteResult;
     return styles.positiveResult;
   };
 

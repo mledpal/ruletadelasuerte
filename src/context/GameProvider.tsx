@@ -52,7 +52,11 @@ const initialState: GameState = {
   totalRounds: 3,
   gameComplete: false,
   wildcardAvailable: true,
+  wildcardEnabled: true,
   guessedLetters: [],
+  boteAmount: 0,
+  boteWinnerId: null,
+  boteRoundEnabled: false,
   config: {
     letterRevealDelay: 250,
     turnChangeDelay: 1000,
@@ -64,18 +68,25 @@ const initialState: GameState = {
 function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case 'INIT_GAME': {
-      const count = action.payload;
-      const players = Array.from({ length: count }, (_, i) => ({
+      const { playerCount, rounds, wildcardEnabled, boteRoundEnabled } = action.payload;
+      const players = Array.from({ length: playerCount }, (_, i) => ({
         id: i,
         name: `Jugador ${i + 1}`,
         score: 0,
         wallet: 0,
         hasWildcard: false,
       }));
+      const isBoteActive = boteRoundEnabled && playerCount >= 2;
       return {
         ...initialState,
         players,
-        wildcardAvailable: count > 1,
+        totalRounds: rounds,
+        wildcardEnabled,
+        wildcardAvailable: wildcardEnabled && playerCount > 1,
+        boteRoundEnabled: isBoteActive,
+        boteAmount: isBoteActive && rounds === 1 ? 1000 : 0,
+        boteWinnerId: null,
+        config: { ...initialState.config, totalRounds: rounds },
       };
     }
 
@@ -130,15 +141,23 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         lastWheelResult: null,
       };
 
-    case 'ADD_SCORE':
+    case 'ADD_SCORE': {
+      const isBoteRound =
+        state.boteRoundEnabled &&
+        state.currentRound === state.totalRounds &&
+        state.players.length >= 2;
       return {
         ...state,
+        boteAmount: isBoteRound
+          ? state.boteAmount + action.payload.amount
+          : state.boteAmount,
         players: state.players.map((player) =>
           player.id === action.payload.playerId
             ? { ...player, score: player.score + action.payload.amount }
             : player
         ),
       };
+    }
 
     case 'DEDUCT_SCORE':
       return {
@@ -209,28 +228,48 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         }),
       };
 
-    case 'NEXT_ROUND':
+    case 'NEXT_ROUND': {
       if (state.currentRound >= state.totalRounds) {
         return {
           ...state,
           gameComplete: true,
         };
       }
+      const nextRound = state.currentRound + 1;
+      const startBote =
+        state.boteRoundEnabled &&
+        nextRound === state.totalRounds &&
+        state.players.length >= 2;
       return {
         ...state,
-        currentRound: state.currentRound + 1,
+        currentRound: nextRound,
         currentPlayer: (state.currentPlayer + 1) % state.players.length,
         roundComplete: false,
         hasSpunWheel: false,
         wheelValue: 0,
         lastWheelResult: null,
         turnPhase: 'spin',
-        wildcardAvailable: state.players.length > 1,
+        wildcardAvailable: state.wildcardEnabled && state.players.length > 1,
         guessedLetters: [],
+        boteAmount: startBote ? 1000 : state.boteAmount,
         players: state.players.map((player) => ({
           ...player,
           score: 0,
         })),
+      };
+    }
+
+    case 'WIN_BOTE':
+      return {
+        ...state,
+        roundComplete: true,
+        boteWinnerId: action.payload,
+        players: state.players.map((player) => {
+          if (player.id === action.payload) {
+            return { ...player, wallet: player.wallet + state.boteAmount + player.score };
+          }
+          return { ...player, score: 0 };
+        }),
       };
 
     case 'COMPLETE_GAME':
@@ -257,7 +296,13 @@ function gameReducer(state: GameState, action: GameAction): GameState {
     case 'RESET_GAME':
       return {
         ...initialState,
-        wildcardAvailable: state.players.length > 1,
+        wildcardAvailable: state.wildcardEnabled && state.players.length > 1,
+        wildcardEnabled: state.wildcardEnabled,
+        totalRounds: state.totalRounds,
+        boteRoundEnabled: state.boteRoundEnabled,
+        boteAmount: 0,
+        boteWinnerId: null,
+        config: { ...initialState.config, totalRounds: state.totalRounds },
         players: state.players.map((p) => ({ ...p, score: 0, wallet: 0, hasWildcard: false })),
       };
 
