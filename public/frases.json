@@ -156,5 +156,11 @@
   { "phrase": "MINECRAFT", "category": "VIDEOJUEGOS", "hint": "Mundo de bloques donde construyes o sobrevives libremente" },
   { "phrase": "TETRIS", "category": "VIDEOJUEGOS", "hint": "Encaja piezas que caen antes de que lleguen arriba" },
   { "phrase": "FINAL FANTASY VII", "category": "VIDEOJUEGOS", "hint": "Cloud Strife y el planeta amenazado por la corporación Shinra" },
-  { "phrase": "PACMAN Y LOS FANTASMAS", "category": "VIDEOJUEGOS", "hint": "El comecocos amarillo perseguido por Blinky, Pinky, Inky y Clyde" }
+  { "phrase": "PACMAN Y LOS FANTASMAS", "category": "VIDEOJUEGOS", "hint": "El comecocos amarillo perseguido por Blinky, Pinky, Inky y Clyde" },
+
+  { "phrase": "HIMILCE DE CASTULO", "category": "CASTULO", "hint": "Princesa ibera de Cástulo y esposa de Aníbal Barca según las fuentes romanas" },
+  { "phrase": "PATENA DE CRISTO EN MAJESTAD", "category": "CASTULO", "hint": "Excepcional pieza de vidrio cristiana hallada en Linares" },
+  { "phrase": "MOSAICO DE LOS AMORES", "category": "CASTULO", "hint": "Espectacular mosaico romano del siglo III descubierto en las excavaciones de Cástulo" },
+  { "phrase": "CIUDAD IBERORROMANA DE CASTULO", "category": "CASTULO", "hint": "Poderosa metrópoli junto al río Guadalimar en el actual término municipal de Linares, Jaén" },
+  { "phrase": "LAS MINAS DE PLATA DE CASTULO", "category": "CASTULO", "hint": "Riqueza minera que convirtió a Cástulo en una de las ciudades más prósperas de la Hispania antigua" }
 ]

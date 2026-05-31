@@ -27,9 +27,33 @@ export function HowToPlay({ onBack }: HowToPlayProps) {
           </div>
           <p>
             Descubre la frase oculta antes que tus rivales y acumula más dinero en tu
-            <strong> cartera</strong> al final de las <strong>3 rondas</strong>.
+            <strong> cartera</strong> al final de todas las rondas.
             Gana quien tenga más dinero al terminar la última ronda.
           </p>
+        </section>
+
+        <section className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <span className={styles.icon}>🎛️</span>
+            <h2 className={styles.sectionTitle}>Configuración inicial</h2>
+          </div>
+          <p className={styles.sectionIntro}>Antes de empezar se pasa por tres pasos:</p>
+          <ol className={styles.stepList}>
+            <li>
+              <strong>Jugadores</strong> — elige de 1 a 6 participantes.
+            </li>
+            <li>
+              <strong>Temas</strong> — selecciona uno o varios temas (Televisión, Historia,
+              Arte…). Solo se usarán frases de los temas elegidos. Cada tema muestra entre
+              paréntesis cuántas frases tiene disponibles. Si eliges todos, el juego funciona
+              con el catálogo completo.
+            </li>
+            <li>
+              <strong>Rondas y opciones</strong> — elige el número de rondas (1–5, limitado
+              al total de frases disponibles con los temas escogidos), activa o desactiva
+              los <strong>comodines</strong> y la <strong>ronda del BOTE</strong> opcional.
+            </li>
+          </ol>
         </section>
 
         <section className={styles.section}>
@@ -122,18 +146,22 @@ export function HowToPlay({ onBack }: HowToPlayProps) {
             <h2 className={styles.sectionTitle}>Mecánica de rondas</h2>
           </div>
           <ul className={styles.bulletList}>
-            <li>La partida consta de <strong>3 rondas</strong>.</li>
+            <li>
+              La partida consta de las <strong>rondas elegidas en la configuración</strong>{' '}
+              (entre 1 y 5, según las frases disponibles de los temas escogidos).
+            </li>
             <li>
               Al resolver el panel, los puntos de la ronda pasan automáticamente a la{' '}
               <strong>cartera del ganador</strong>.
             </li>
             <li>
               Tras 3 segundos, el juego avanza solo a la siguiente ronda con una{' '}
-              <strong>frase nueva</strong>. Las frases no se repiten en la misma partida.
+              <strong>frase nueva</strong> del mismo conjunto de temas. Las frases no se
+              repiten en la misma partida.
             </li>
             <li>
-              Al terminar la ronda 3 aparece el <strong>podio final</strong> con las carteras
-              de todos los jugadores. ¡El que más tenga gana!
+              Al terminar la última ronda aparece el <strong>podio final</strong> con las
+              carteras de todos los jugadores. ¡El que más tenga gana!
             </li>
           </ul>
         </section>

@@ -44,11 +44,26 @@ function GameApp() {
       }
     })()
   );
+  const selectedCategoriesRef = useRef<string[]>([]);
   const initializedRef = useRef(false);
   const previousViewRef = useRef<AppView>('setup');
 
+  const availableCategories = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const p of phrases) {
+      counts.set(p.category, (counts.get(p.category) ?? 0) + 1);
+    }
+    return Array.from(counts.entries())
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'es'));
+  }, [phrases]);
+
   const pickPhrase = useCallback((phraseList: Phrase[]) => {
-    const available = phraseList.filter((p) => !usedRef.current.has(p.phrase));
+    const cats = selectedCategoriesRef.current;
+    const filtered = cats.length > 0
+      ? phraseList.filter((p) => cats.includes(p.category))
+      : phraseList;
+    const available = filtered.filter((p) => !usedRef.current.has(p.phrase));
     if (available.length === 0) return;
 
     const selected = available[Math.floor(Math.random() * available.length)];
@@ -112,15 +127,17 @@ function GameApp() {
     localStorage.removeItem(VIEW_KEY);
     localStorage.removeItem(USED_KEY);
     usedRef.current = new Set();
+    selectedCategoriesRef.current = [];
     dispatch({ type: 'RESET_GAME' });
     setShowResumeDialog(false);
     setView('setup');
   }, [dispatch]);
 
-  const handleInitGame = useCallback((playerCount: number, rounds: number, wildcardEnabled: boolean, boteRoundEnabled: boolean) => {
+  const handleInitGame = useCallback((playerCount: number, rounds: number, wildcardEnabled: boolean, boteRoundEnabled: boolean, selectedCategories: string[]) => {
     localStorage.removeItem(VIEW_KEY);
     localStorage.removeItem(USED_KEY);
     usedRef.current = new Set();
+    selectedCategoriesRef.current = selectedCategories;
     dispatch({ type: 'INIT_GAME', payload: { playerCount, rounds, wildcardEnabled, boteRoundEnabled } });
     pickPhrase(phrases);
     setView('game');
@@ -159,7 +176,7 @@ function GameApp() {
   if (view === 'setup') {
     return (
       <div className="appSetup">
-        <PlayerSetup onStart={handleInitGame} onHowToPlay={handleOpenInstructions} />
+        <PlayerSetup availableCategories={availableCategories} onStart={handleInitGame} onHowToPlay={handleOpenInstructions} />
       </div>
     );
   }
