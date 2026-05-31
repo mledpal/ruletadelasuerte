@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useGame } from '../../context/GameContext';
 import type { Phrase } from '../../types/game';
+import type { SyncStatus } from '../../hooks/usePhrases';
 import styles from './PhraseManager.module.css';
 
 interface PhraseManagerProps {
@@ -10,6 +11,7 @@ interface PhraseManagerProps {
   onDeletePhrase: (index: number) => void;
   onEditPhrase: (index: number, phrase: string, category: string, hint: string) => void;
   onStartGame: () => void;
+  syncStatus?: SyncStatus;
 }
 
 interface EditState {
@@ -19,7 +21,7 @@ interface EditState {
   hint: string;
 }
 
-export function PhraseManager({ onBack, phrases, onAddPhrase, onDeletePhrase, onEditPhrase, onStartGame }: PhraseManagerProps) {
+export function PhraseManager({ onBack, phrases, onAddPhrase, onDeletePhrase, onEditPhrase, onStartGame, syncStatus }: PhraseManagerProps) {
   const { state } = useGame();
   const [newPhrase, setNewPhrase] = useState('');
   const [newCategory, setNewCategory] = useState('');
@@ -149,6 +151,9 @@ export function PhraseManager({ onBack, phrases, onAddPhrase, onDeletePhrase, on
       <div className={styles.phraseList}>
         <div className={styles.phraseCount}>
           {phrases.length} frase{phrases.length !== 1 ? 's' : ''} disponible{phrases.length !== 1 ? 's' : ''}
+          {syncStatus === 'loading' && (
+            <span className={styles.syncBadge}>Sincronizando…</span>
+          )}
         </div>
         {phrases.map((phrase, index) => (
           <div key={index} className={styles.phraseItem}>

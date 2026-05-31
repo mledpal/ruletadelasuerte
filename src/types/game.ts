@@ -2,6 +2,7 @@ export interface Phrase {
   phrase: string;
   category: string;
   hint: string;
+  source?: 'default' | 'online' | 'user';
 }
 
 export type CellState = 'hidden' | 'revealing' | 'visible' | 'highlighted';

@@ -18,7 +18,7 @@ function GameApp() {
   const [view, setView] = useState<AppView>('setup');
   const { state, dispatch } = useGame();
   const { theme, toggle: toggleTheme } = useTheme();
-  const { phrases, addPhrase, deletePhrase, editPhrase } = usePhrases();
+  const { phrases, addPhrase, deletePhrase, editPhrase, syncStatus } = usePhrases();
   const usedRef = useRef<Set<string>>(new Set());
   const initializedRef = useRef(false);
 
@@ -91,6 +91,9 @@ function GameApp() {
           {theme === 'dark' ? '☀️' : '🌙'}
         </button>
         <h1>La Ruleta de la Fortuna</h1>
+        {syncStatus === 'loading' && (
+          <span className="syncBadge">Sincronizando frases…</span>
+        )}
         {view === 'game' && (
           <button className="managePhrases" onClick={() => setView('phrases')}>
             Gestionar Frases
@@ -113,6 +116,7 @@ function GameApp() {
           onDeletePhrase={deletePhrase}
           onEditPhrase={editPhrase}
           onStartGame={handleStartGame}
+          syncStatus={syncStatus}
         />
       )}
     </div>
