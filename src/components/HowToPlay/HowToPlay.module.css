@@ -1,0 +1,246 @@
+.wrapper {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 32px 20px 60px;
+}
+
+.container {
+  max-width: 860px;
+  width: 100%;
+}
+
+/* ── Barra superior ─────────────────────────────── */
+.topBar {
+  margin-bottom: 28px;
+}
+
+.backButton {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 8px 18px;
+  cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.backButton:hover {
+  color: var(--color-gold);
+  border-color: rgba(255, 215, 0, 0.4);
+  transform: translateX(-3px);
+}
+
+/* ── Título principal ───────────────────────────── */
+.title {
+  font-family: var(--font-display);
+  font-size: clamp(2.4rem, 6vw, 4rem);
+  letter-spacing: 0.06em;
+  background: linear-gradient(135deg, var(--color-gold) 0%, #fff8a0 40%, var(--color-gold) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 2px 12px rgba(255, 215, 0, 0.35));
+  line-height: 1.1;
+  margin-bottom: 16px;
+}
+
+.intro {
+  font-size: 1.05rem;
+  color: var(--color-text-muted);
+  line-height: 1.65;
+  margin-bottom: 40px;
+}
+
+/* ── Secciones ──────────────────────────────────── */
+.section {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  padding: 28px 32px;
+  margin-bottom: 20px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.icon {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.sectionTitle {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  letter-spacing: 0.05em;
+  color: var(--color-gold);
+}
+
+.section p,
+.section li {
+  font-size: 0.97rem;
+  color: var(--color-text);
+  line-height: 1.7;
+}
+
+.sectionIntro {
+  margin-bottom: 16px;
+}
+
+/* ── Tabla de casillas de la ruleta ─────────────── */
+.wheelTable {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.wheelRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  font-size: 0.95rem;
+  color: var(--color-text);
+  line-height: 1.6;
+}
+
+.wheelBadge,
+.wheelBadgeGold {
+  flex-shrink: 0;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  letter-spacing: 0.06em;
+  padding: 4px 12px;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+.wheelBadgeGold {
+  background: rgba(255, 215, 0, 0.15);
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  color: var(--color-gold);
+}
+
+.wheelBadge.danger {
+  background: rgba(255, 71, 87, 0.15);
+  border: 1px solid rgba(255, 71, 87, 0.4);
+  color: var(--color-danger);
+}
+
+.wheelBadge.warning {
+  background: rgba(255, 165, 0, 0.12);
+  border: 1px solid rgba(255, 165, 0, 0.35);
+  color: #ffa500;
+}
+
+.wheelBadge.comodin {
+  background: rgba(200, 164, 0, 0.18);
+  border: 1px solid rgba(255, 215, 0, 0.45);
+  color: var(--color-gold);
+}
+
+/* ── Lista de pasos numerados ───────────────────── */
+.stepList {
+  padding-left: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  list-style: decimal;
+}
+
+/* ── Tabla de puntuación ────────────────────────── */
+.scoreTable {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.scoreRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  font-size: 0.95rem;
+  color: var(--color-text);
+  line-height: 1.65;
+}
+
+.scoreLabel {
+  flex-shrink: 0;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  padding: 4px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+.scoreLabel.gold {
+  background: rgba(255, 215, 0, 0.12);
+  border-color: rgba(255, 215, 0, 0.4);
+  color: var(--color-gold);
+}
+
+/* ── Lista de viñetas ───────────────────────────── */
+.bulletList {
+  padding-left: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  list-style: disc;
+}
+
+/* ── Barra inferior ─────────────────────────────── */
+.bottomBar {
+  margin-top: 36px;
+  display: flex;
+  justify-content: center;
+}
+
+.backButtonBottom {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  letter-spacing: 0.06em;
+  padding: 12px 32px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  background: rgba(255, 215, 0, 0.08);
+  color: var(--color-gold);
+  cursor: pointer;
+  transition: background var(--transition-fast), transform var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.backButtonBottom:hover {
+  background: rgba(255, 215, 0, 0.18);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-glow-gold);
+}
+
+/* ── Responsive ─────────────────────────────────── */
+@media (max-width: 600px) {
+  .wrapper {
+    padding: 20px 12px 48px;
+  }
+
+  .section {
+    padding: 20px 18px;
+  }
+
+  .wheelRow,
+  .scoreRow {
+    flex-direction: column;
+    gap: 6px;
+  }
+}

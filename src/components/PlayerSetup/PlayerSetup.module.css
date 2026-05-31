@@ -120,6 +120,27 @@
   cursor: not-allowed;
 }
 
+.howToPlayLink {
+  margin-top: 16px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.howToPlayLink:hover {
+  color: var(--color-gold);
+  background: rgba(255, 215, 0, 0.06);
+}
+
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(32px) scale(0.97); }
   to { opacity: 1; transform: translateY(0) scale(1); }

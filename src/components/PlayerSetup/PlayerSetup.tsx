@@ -3,9 +3,10 @@ import styles from './PlayerSetup.module.css';
 
 interface PlayerSetupProps {
   onStart: (playerCount: number) => void;
+  onHowToPlay: () => void;
 }
 
-export function PlayerSetup({ onStart }: PlayerSetupProps) {
+export function PlayerSetup({ onStart, onHowToPlay }: PlayerSetupProps) {
   const [selected, setSelected] = useState<number | null>(null);
 
   return (
@@ -35,6 +36,10 @@ export function PlayerSetup({ onStart }: PlayerSetupProps) {
           onClick={() => selected !== null && onStart(selected)}
         >
           Comenzar partida
+        </button>
+
+        <button className={styles.howToPlayLink} onClick={onHowToPlay}>
+          ¿Cómo se juega?
         </button>
       </div>
     </div>

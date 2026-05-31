@@ -10,9 +10,10 @@ import { useTheme } from './hooks/useTheme';
 import { usePhrases } from './hooks/usePhrases';
 import type { Phrase } from './types/game';
 import { PlayerSetup } from './components/PlayerSetup/PlayerSetup';
+import { HowToPlay } from './components/HowToPlay/HowToPlay';
 import './App.css';
 
-type AppView = 'setup' | 'game' | 'phrases';
+type AppView = 'setup' | 'game' | 'phrases' | 'instructions';
 
 function GameApp() {
   const [view, setView] = useState<AppView>('setup');
@@ -21,6 +22,7 @@ function GameApp() {
   const { phrases, addPhrase, deletePhrase, editPhrase, syncStatus } = usePhrases();
   const usedRef = useRef<Set<string>>(new Set());
   const initializedRef = useRef(false);
+  const previousViewRef = useRef<AppView>('setup');
 
   const pickPhrase = useCallback((phraseList: Phrase[]) => {
     const available = phraseList.filter((p) => !usedRef.current.has(p.phrase));
@@ -60,6 +62,15 @@ function GameApp() {
     }
   }, [state.roundComplete, state.gameComplete, handleNextRound]);
 
+  const handleOpenInstructions = useCallback(() => {
+    previousViewRef.current = view;
+    setView('instructions');
+  }, [view]);
+
+  const handleCloseInstructions = useCallback(() => {
+    setView(previousViewRef.current);
+  }, []);
+
   const handleInitGame = useCallback((playerCount: number) => {
     usedRef.current = new Set();
     dispatch({ type: 'INIT_GAME', payload: playerCount });
@@ -73,10 +84,18 @@ function GameApp() {
     pickPhrase(phrases);
   }, [phrases, dispatch, pickPhrase]);
 
+  if (view === 'instructions') {
+    return (
+      <div className="appSetup">
+        <HowToPlay onBack={handleCloseInstructions} />
+      </div>
+    );
+  }
+
   if (view === 'setup') {
     return (
       <div className="appSetup">
-        <PlayerSetup onStart={handleInitGame} />
+        <PlayerSetup onStart={handleInitGame} onHowToPlay={handleOpenInstructions} />
       </div>
     );
   }
@@ -94,11 +113,16 @@ function GameApp() {
         {syncStatus === 'loading' && (
           <span className="syncBadge">Sincronizando frases…</span>
         )}
-        {view === 'game' && (
-          <button className="managePhrases" onClick={() => setView('phrases')}>
-            Gestionar Frases
+        <div className="headerRight">
+          {view === 'game' && (
+            <button className="managePhrases" onClick={() => setView('phrases')}>
+              Gestionar Frases
+            </button>
+          )}
+          <button className="howToPlay" onClick={handleOpenInstructions} title="Cómo se juega">
+            ?
           </button>
-        )}
+        </div>
       </header>
       {view === 'game' ? (
         <main className="main">
