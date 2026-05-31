@@ -5,9 +5,11 @@ interface DialogProps {
   onConfirm: () => void;
   onCancel: () => void;
   singleAction?: boolean;
+  confirmLabel?: string;
+  cancelLabel?: string;
 }
 
-export function Dialog({ message, onConfirm, onCancel, singleAction }: DialogProps) {
+export function Dialog({ message, onConfirm, onCancel, singleAction, confirmLabel, cancelLabel }: DialogProps) {
   return (
     <div className={styles.overlay}>
       <div className={styles.dialog}>
@@ -15,15 +17,15 @@ export function Dialog({ message, onConfirm, onCancel, singleAction }: DialogPro
         <div className={styles.buttons}>
           {singleAction ? (
             <button className={`${styles.button} ${styles.confirm}`} onClick={onConfirm}>
-              Entendido
+              {confirmLabel ?? 'Entendido'}
             </button>
           ) : (
             <>
               <button className={`${styles.button} ${styles.confirm}`} onClick={onConfirm}>
-                Sí
+                {confirmLabel ?? 'Sí'}
               </button>
               <button className={`${styles.button} ${styles.cancel}`} onClick={onCancel}>
-                No
+                {cancelLabel ?? 'No'}
               </button>
             </>
           )}

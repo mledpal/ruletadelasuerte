@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { GameProvider } from './context/GameProvider';
 import { LetterPanel } from './components/LetterPanel/LetterPanel';
 import { PlayerInfo } from './components/PlayerInfo/PlayerInfo';
@@ -10,17 +10,40 @@ import { useTheme } from './hooks/useTheme';
 import { usePhrases } from './hooks/usePhrases';
 import type { Phrase } from './types/game';
 import { PlayerSetup } from './components/PlayerSetup/PlayerSetup';
+import { Dialog } from './components/Dialog/Dialog';
 import { HowToPlay } from './components/HowToPlay/HowToPlay';
 import './App.css';
+
+const VIEW_KEY = 'ruleta:view';
+const USED_KEY = 'ruleta:usedPhrases';
 
 type AppView = 'setup' | 'game' | 'phrases' | 'instructions';
 
 function GameApp() {
-  const [view, setView] = useState<AppView>('setup');
   const { state, dispatch } = useGame();
   const { theme, toggle: toggleTheme } = useTheme();
   const { phrases, addPhrase, deletePhrase, editPhrase, syncStatus } = usePhrases();
-  const usedRef = useRef<Set<string>>(new Set());
+
+  const hasSavedGame = useMemo(
+    () => localStorage.getItem(VIEW_KEY) === 'game' && !state.gameComplete,
+    // Solo evaluar en el primer render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
+
+  const [view, setView] = useState<AppView>(hasSavedGame ? 'game' : 'setup');
+  const [showResumeDialog, setShowResumeDialog] = useState(hasSavedGame);
+
+  const usedRef = useRef<Set<string>>(
+    (() => {
+      try {
+        const raw = localStorage.getItem(USED_KEY);
+        return raw ? new Set<string>(JSON.parse(raw) as string[]) : new Set<string>();
+      } catch {
+        return new Set<string>();
+      }
+    })()
+  );
   const initializedRef = useRef(false);
   const previousViewRef = useRef<AppView>('setup');
 
@@ -30,6 +53,9 @@ function GameApp() {
 
     const selected = available[Math.floor(Math.random() * available.length)];
     usedRef.current = new Set([...usedRef.current, selected.phrase]);
+    try {
+      localStorage.setItem(USED_KEY, JSON.stringify(Array.from(usedRef.current)));
+    } catch { /* ignorar */ }
 
     dispatch({
       type: 'SET_PHRASE',
@@ -37,11 +63,18 @@ function GameApp() {
     });
   }, [dispatch]);
 
-  // Seleccionar frase aleatoria al montar la app por primera vez
+  // Guardar view en localStorage al cambiar
+  useEffect(() => {
+    localStorage.setItem(VIEW_KEY, view);
+  }, [view]);
+
+  // Seleccionar frase aleatoria al montar la app (solo si no hay partida guardada)
   useEffect(() => {
     if (!initializedRef.current) {
       initializedRef.current = true;
-      pickPhrase(phrases);
+      if (!hasSavedGame) {
+        pickPhrase(phrases);
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -71,7 +104,22 @@ function GameApp() {
     setView(previousViewRef.current);
   }, []);
 
+  const handleResume = useCallback(() => {
+    setShowResumeDialog(false);
+  }, []);
+
+  const handleDiscardSaved = useCallback(() => {
+    localStorage.removeItem(VIEW_KEY);
+    localStorage.removeItem(USED_KEY);
+    usedRef.current = new Set();
+    dispatch({ type: 'RESET_GAME' });
+    setShowResumeDialog(false);
+    setView('setup');
+  }, [dispatch]);
+
   const handleInitGame = useCallback((playerCount: number) => {
+    localStorage.removeItem(VIEW_KEY);
+    localStorage.removeItem(USED_KEY);
     usedRef.current = new Set();
     dispatch({ type: 'INIT_GAME', payload: playerCount });
     pickPhrase(phrases);
@@ -79,10 +127,26 @@ function GameApp() {
   }, [phrases, dispatch, pickPhrase]);
 
   const handleStartGame = useCallback(() => {
+    localStorage.removeItem(VIEW_KEY);
+    localStorage.removeItem(USED_KEY);
     usedRef.current = new Set();
     dispatch({ type: 'RESET_GAME' });
     pickPhrase(phrases);
   }, [phrases, dispatch, pickPhrase]);
+
+  if (showResumeDialog) {
+    return (
+      <div className="appSetup">
+        <Dialog
+          message="Se ha encontrado una partida guardada. ¿Quieres continuar donde lo dejaste?"
+          confirmLabel="Continuar partida"
+          cancelLabel="Nueva partida"
+          onConfirm={handleResume}
+          onCancel={handleDiscardSaved}
+        />
+      </div>
+    );
+  }
 
   if (view === 'instructions') {
     return (

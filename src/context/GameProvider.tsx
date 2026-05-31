@@ -1,6 +1,26 @@
-import { useReducer, type ReactNode } from 'react';
+import { useReducer, useEffect, useCallback, type ReactNode } from 'react';
 import type { GameState, GameAction, LetterCell } from '../types/game';
 import { GameContext } from './GameContext';
+
+const SAVE_KEY = 'ruleta:state';
+
+function loadSavedState(): GameState | null {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return null;
+    const saved = JSON.parse(raw) as GameState;
+    // Sanear estado transitorio de animación
+    return {
+      ...saved,
+      isRevealing: false,
+      cells: saved.cells.map((c) =>
+        c.state === 'revealing' ? { ...c, state: 'visible' } : c
+      ),
+    };
+  } catch {
+    return null;
+  }
+}
 
 function createCellsFromPhrase(phrase: string): LetterCell[] {
   return phrase.split('').map((char, index) => ({
@@ -247,7 +267,23 @@ function gameReducer(state: GameState, action: GameAction): GameState {
 }
 
 export function GameProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(gameReducer, initialState);
+  const [state, dispatch] = useReducer(gameReducer, undefined, () => loadSavedState() ?? initialState);
 
-  return <GameContext.Provider value={{ state, dispatch }}>{children}</GameContext.Provider>;
+  const wrappedDispatch = useCallback((action: GameAction) => {
+    if (action.type === 'RESET_GAME' || action.type === 'INIT_GAME') {
+      localStorage.removeItem(SAVE_KEY);
+    }
+    dispatch(action);
+  }, []);
+
+  useEffect(() => {
+    if (state.isRevealing) return;
+    try {
+      localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+    } catch {
+      // localStorage no disponible o lleno — ignorar
+    }
+  }, [state]);
+
+  return <GameContext.Provider value={{ state, dispatch: wrappedDispatch }}>{children}</GameContext.Provider>;
 }
