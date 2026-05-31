@@ -191,6 +191,11 @@ body {
     transform: translateY(-2px);
   }
 
+  .headerRight {
+    position: static;
+    transform: none;
+  }
+
   .header {
     flex-wrap: wrap;
     justify-content: space-between;
@@ -210,15 +215,34 @@ body {
   }
 
   .header {
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     margin-bottom: 16px;
   }
 
+  .themeToggle {
+    order: 1;
+    flex-shrink: 0;
+  }
+
+  .headerRight {
+    order: 2;
+    flex-shrink: 0;
+  }
+
   .header h1 {
-    flex: none;
-    order: 0;
+    flex: 1 1 100%;
+    order: 3;
+    text-align: center;
+    font-size: clamp(2rem, 8vw, 2.8rem);
+  }
+
+  .managePhrases {
+    font-size: 0.8rem;
+    padding: 7px 12px;
   }
 
   .main {
