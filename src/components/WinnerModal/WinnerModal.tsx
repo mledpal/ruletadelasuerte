@@ -1,4 +1,5 @@
 import type { Player } from '../../types/game';
+import { currencyUnit } from '../../utils/currency';
 import styles from './WinnerModal.module.css';
 
 interface WinnerModalProps {
@@ -6,13 +7,15 @@ interface WinnerModalProps {
   boteAmount: number;
   boteWinnerId: number | null;
   onNewGame: () => void;
+  castulo?: boolean;
 }
 
 const MEDAL = ['🥇', '🥈', '🥉'];
 
-export function WinnerModal({ players, boteAmount, boteWinnerId, onNewGame }: WinnerModalProps) {
+export function WinnerModal({ players, boteAmount, boteWinnerId, onNewGame, castulo = false }: WinnerModalProps) {
   const ranked = [...players].sort((a, b) => b.wallet - a.wallet);
   const boteWinner = boteWinnerId !== null ? players.find((p) => p.id === boteWinnerId) : null;
+  const unit = currencyUnit(castulo);
 
   return (
     <div className={styles.overlay}>
@@ -28,7 +31,7 @@ export function WinnerModal({ players, boteAmount, boteWinnerId, onNewGame }: Wi
             >
               <span className={styles.medal}>{MEDAL[i]}</span>
               <span className={styles.name}>{player.name}</span>
-              <span className={styles.wallet}>{player.wallet.toLocaleString('es-ES')} €</span>
+              <span className={styles.wallet}>{player.wallet.toLocaleString('es-ES')} {unit}</span>
             </div>
           ))}
         </div>
@@ -37,11 +40,11 @@ export function WinnerModal({ players, boteAmount, boteWinnerId, onNewGame }: Wi
           <div className={styles.boteResult}>
             {boteWinner ? (
               <span className={styles.boteWon}>
-                🏆 El bote de {boteAmount.toLocaleString('es-ES')}€ fue ganado por <strong>{boteWinner.name}</strong>
+                🏆 El bote de {boteAmount.toLocaleString('es-ES')} {unit} fue ganado por <strong>{boteWinner.name}</strong>
               </span>
             ) : (
               <span className={styles.boteUnclaimed}>
-                💸 El bote de {boteAmount.toLocaleString('es-ES')}€ no fue reclamado
+                💸 El bote de {boteAmount.toLocaleString('es-ES')} {unit} no fue reclamado
               </span>
             )}
           </div>

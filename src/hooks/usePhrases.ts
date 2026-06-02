@@ -51,6 +51,11 @@ const DEFAULT_PHRASES: Phrase[] = [
   { phrase: 'INTERNET DE LAS COSAS', category: 'TECNOLOGÍA', hint: 'Dispositivos conectados entre sí', source: 'default' },
   { phrase: 'INTELIGENCIA ARTIFICIAL', category: 'TECNOLOGÍA', hint: 'Máquinas que aprenden y razonan', source: 'default' },
   { phrase: 'REALIDAD AUMENTADA', category: 'TECNOLOGÍA', hint: 'Capas digitales sobre el mundo real', source: 'default' },
+  { phrase: 'HIMILCE DE CASTULO', category: 'CASTULO', hint: 'Princesa ibera de Cástulo y esposa de Aníbal Barca según las fuentes romanas', source: 'default' },
+  { phrase: 'PATENA DE CRISTO EN MAJESTAD', category: 'CASTULO', hint: 'Excepcional pieza de vidrio cristiana hallada en Linares', source: 'default' },
+  { phrase: 'MOSAICO DE LOS AMORES', category: 'CASTULO', hint: 'Espectacular mosaico romano del siglo III descubierto en las excavaciones de Cástulo', source: 'default' },
+  { phrase: 'CIUDAD IBERORROMANA DE CASTULO', category: 'CASTULO', hint: 'Poderosa metrópoli junto al río Guadalimar en el actual término municipal de Linares, Jaén', source: 'default' },
+  { phrase: 'LAS MINAS DE PLATA DE CASTULO', category: 'CASTULO', hint: 'Riqueza minera que convirtió a Cástulo en una de las ciudades más prósperas de la Hispania antigua', source: 'default' },
 ];
 
 function normalizeKey(text: string): string {

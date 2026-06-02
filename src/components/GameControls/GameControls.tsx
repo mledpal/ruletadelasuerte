@@ -4,7 +4,9 @@ import { useLetterReveal } from '../../hooks/useLetterReveal';
 import { playSuccess, playTransition, playError } from '../../utils/audio';
 import { Dialog } from '../Dialog/Dialog';
 import { Wheel } from '../Wheel/Wheel';
-import type { WheelResult, LetterCell } from '../../types/game';
+import { TargetPicker } from '../TargetPicker/TargetPicker';
+import type { WheelResult, LetterCell, SpecialWheelResult } from '../../types/game';
+import { formatMoney, currencyUnit } from '../../utils/currency';
 import styles from './GameControls.module.css';
 
 const VOWELS = ['A', 'E', 'I', 'O', 'U'];
@@ -68,11 +70,14 @@ export function GameControls() {
   const [dialogType, setDialogType] = useState<DialogType>(null);
   const [solvePhrase, setSolvePhrase] = useState('');
   const [failedLetterType, setFailedLetterType] = useState<'consonant' | 'vowel' | null>(null);
-  const [pendingSpecialResult, setPendingSpecialResult] = useState<'QUIEBRA' | 'PIERDE_TURNO' | 'COMODIN' | 'BOTE' | null>(null);
+  const [pendingSpecialResult, setPendingSpecialResult] = useState<SpecialWheelResult | null>(null);
   const [pendingBote, setPendingBote] = useState(false);
+  const [targetMode, setTargetMode] = useState<'asedio' | 'escipion' | null>(null);
 
   const [showWheelModal, setShowWheelModal] = useState(false);
 
+  const castulo = state.castuloMode;
+  const unit = currencyUnit(castulo);
   const currentPlayer = state.players[state.currentPlayer];
   const canBuyVowel = currentPlayer.score >= VOWEL_COST;
   const hasHiddenConsonants = state.cells.some(
@@ -113,14 +118,31 @@ export function GameControls() {
       setPendingSpecialResult(result);
       setMessage({ text: '¡COMODÍN! Si aciertas la consonante, ganarás el comodín', type: 'info' });
       dispatch({ type: 'SET_TURN_PHASE', payload: 'consonant' });
+    } else if (result === 'ANIBAL' || result === 'HIMILCE' || result === 'ESCIPION') {
+      const name = result === 'ANIBAL' ? 'Aníbal' : result === 'HIMILCE' ? 'Himilce' : 'Escipión';
+      setPendingSpecialResult(result);
+      setMessage({ text: `¡${name.toUpperCase()}! Si aciertas la consonante, conseguirás a ${name}`, type: 'info' });
+      dispatch({ type: 'SET_TURN_PHASE', payload: 'consonant' });
+    } else if (result === 'ASEDIO') {
+      setPendingSpecialResult(null);
+      if (state.players.length < 2) {
+        // Sin rivales no hay a quién entregar: continúa el turno.
+        setMessage({ text: '¡ASEDIO! No hay otros jugadores. Puedes volver a girar.', type: 'info' });
+        dispatch({ type: 'RESET_WHEEL' });
+        dispatch({ type: 'SET_TURN_PHASE', payload: 'next-action' });
+      } else {
+        playError();
+        setMessage({ text: '¡ASEDIO! Entrega tu dinero temporal y tus gajos a otro jugador.', type: 'error' });
+        setTargetMode('asedio');
+      }
     } else if (result === 'BOTE') {
       setPendingSpecialResult('BOTE');
-      setMessage({ text: `¡BOTE! Acierte una consonante para optar al premio de ${state.boteAmount.toLocaleString('es-ES')}€`, type: 'info' });
+      setMessage({ text: `¡BOTE! Acierte una consonante para optar al premio de ${formatMoney(state.boteAmount, castulo)}`, type: 'info' });
       dispatch({ type: 'SET_TURN_PHASE', payload: 'consonant' });
     } else {
       dispatch({ type: 'SET_TURN_PHASE', payload: 'consonant' });
     }
-  }, [currentPlayer.hasWildcard, currentPlayer.id, dispatch, handleChangeTurn, state.boteAmount]);
+  }, [currentPlayer.hasWildcard, currentPlayer.id, dispatch, handleChangeTurn, state.boteAmount, state.players.length, castulo]);
 
   const handleGuessLetter = async () => {
     if (!letter || isRevealing) return;
@@ -149,12 +171,12 @@ export function GameControls() {
 
       if (result.success) {
         setMessage({
-          text: `Vocal comprada: ${result.count} aparición(es). -${VOWEL_COST} €. Puedes seguir comprando vocales.`,
+          text: `Vocal comprada: ${result.count} aparición(es). -${formatMoney(VOWEL_COST, castulo)}. Puedes seguir comprando vocales.`,
           type: 'success',
         });
       } else {
         setFailedLetterType('vowel');
-        setMessage({ text: `La vocal no está presente. -${VOWEL_COST} €`, type: 'error' });
+        setMessage({ text: `La vocal no está presente. -${formatMoney(VOWEL_COST, castulo)}`, type: 'error' });
         if (state.turnPhase === 'vowels') {
           if (currentPlayer.hasWildcard) {
             setDialogType('letter-fail');
@@ -178,7 +200,24 @@ export function GameControls() {
         if (pendingSpecialResult === 'COMODIN') {
           dispatch({ type: 'AWARD_WILDCARD', payload: currentPlayer.id });
           setMessage({
-            text: `¡COMODÍN GANADO! ${result.count} aparición(es). El comodín ahora es tuyo y se reemplaza por 100€.`,
+            text: `¡COMODÍN GANADO! ${result.count} aparición(es). El comodín ahora es tuyo y se reemplaza por ${formatMoney(100, castulo)}.`,
+            type: 'success',
+          });
+          setPendingSpecialResult(null);
+        } else if (
+          pendingSpecialResult === 'ANIBAL' ||
+          pendingSpecialResult === 'HIMILCE' ||
+          pendingSpecialResult === 'ESCIPION'
+        ) {
+          const token = pendingSpecialResult;
+          const name = token === 'ANIBAL' ? 'Aníbal' : token === 'HIMILCE' ? 'Himilce' : 'Escipión';
+          dispatch({ type: 'AWARD_TOKEN', payload: { playerId: currentPlayer.id, token } });
+          const extra =
+            token === 'ESCIPION'
+              ? ' En tu turno podrás usarlo para arrasar a un rival.'
+              : ' Reúne a Aníbal y Himilce y gana la ronda para llevarte 1.000 As.';
+          setMessage({
+            text: `¡${name.toUpperCase()} CONSEGUIDO! ${result.count} aparición(es).${extra}`,
             type: 'success',
           });
           setPendingSpecialResult(null);
@@ -186,7 +225,7 @@ export function GameControls() {
           setPendingBote(true);
           setPendingSpecialResult(null);
           setMessage({
-            text: `¡Consonante correcta! ${result.count} aparición(es). Resuelve el panel para ganar el BOTE de ${state.boteAmount.toLocaleString('es-ES')}€`,
+            text: `¡Consonante correcta! ${result.count} aparición(es). Resuelve el panel para ganar el BOTE de ${formatMoney(state.boteAmount, castulo)}`,
             type: 'success',
           });
         } else {
@@ -194,8 +233,8 @@ export function GameControls() {
           dispatch({ type: 'ADD_SCORE', payload: { playerId: currentPlayer.id, amount: winnings } });
           setMessage({
             text: allVowelsGuessed
-              ? `¡Correcto! ${result.count} aparición(es). +${winnings} €`
-              : `¡Correcto! ${result.count} aparición(es). +${winnings} €. Ahora puedes comprar vocales.`,
+              ? `¡Correcto! ${result.count} aparición(es). +${formatMoney(winnings, castulo)}`
+              : `¡Correcto! ${result.count} aparición(es). +${formatMoney(winnings, castulo)}. Ahora puedes comprar vocales.`,
             type: 'success',
           });
         }
@@ -204,6 +243,14 @@ export function GameControls() {
         setFailedLetterType('consonant');
         if (pendingSpecialResult === 'COMODIN') {
           setMessage({ text: 'La letra no está presente. El comodín sigue en la ruleta.', type: 'error' });
+          setPendingSpecialResult(null);
+        } else if (
+          pendingSpecialResult === 'ANIBAL' ||
+          pendingSpecialResult === 'HIMILCE' ||
+          pendingSpecialResult === 'ESCIPION'
+        ) {
+          const name = pendingSpecialResult === 'ANIBAL' ? 'Aníbal' : pendingSpecialResult === 'HIMILCE' ? 'Himilce' : 'Escipión';
+          setMessage({ text: `La letra no está presente. ${name} sigue en la ruleta.`, type: 'error' });
           setPendingSpecialResult(null);
         } else if (pendingSpecialResult === 'BOTE') {
           setMessage({ text: 'La letra no está presente. Has perdido la opción al BOTE.', type: 'error' });
@@ -290,13 +337,17 @@ export function GameControls() {
       playSuccess();
       dispatch({ type: 'SET_REVEALING', payload: true });
       await revealAll();
+      const bonusText =
+        currentPlayer.hasAnibal && currentPlayer.hasHimilce
+          ? ` ¡Reúne a Aníbal y Himilce: +${formatMoney(1000, castulo)} de bono!`
+          : '';
       if (pendingBote) {
         dispatch({ type: 'WIN_BOTE', payload: currentPlayer.id });
-        setMessage({ text: `¡BOTE GANADO! ${currentPlayer.name} se lleva ${state.boteAmount.toLocaleString('es-ES')}€ del bote`, type: 'success' });
+        setMessage({ text: `¡BOTE GANADO! ${currentPlayer.name} se lleva ${formatMoney(state.boteAmount, castulo)} del bote.${bonusText}`, type: 'success' });
         setPendingBote(false);
       } else {
         dispatch({ type: 'COMPLETE_ROUND', payload: currentPlayer.id });
-        setMessage({ text: `¡Correcto! ${currentPlayer.name} gana la ronda y acumula ${currentPlayer.score}€ en su cartera`, type: 'success' });
+        setMessage({ text: `¡Correcto! ${currentPlayer.name} gana la ronda y acumula ${formatMoney(currentPlayer.score, castulo)} en su cartera.${bonusText}`, type: 'success' });
       }
     } else {
       setPendingBote(false);
@@ -307,9 +358,28 @@ export function GameControls() {
     setSolvePhrase('');
   };
 
+  const handleTargetSelect = (targetId: number) => {
+    if (targetMode === 'asedio') {
+      dispatch({ type: 'ASEDIO_TRANSFER', payload: { sourceId: currentPlayer.id, targetId } });
+      dispatch({ type: 'RESET_WHEEL' });
+      dispatch({ type: 'SET_TURN_PHASE', payload: 'next-action' });
+      const target = state.players.find((p) => p.id === targetId);
+      setMessage({ text: `¡ASEDIO! Has entregado tu botín a ${target?.name ?? 'otro jugador'}. Puedes volver a girar.`, type: 'info' });
+    } else if (targetMode === 'escipion') {
+      dispatch({ type: 'USE_ESCIPION', payload: { sourceId: currentPlayer.id, targetId } });
+      const target = state.players.find((p) => p.id === targetId);
+      setMessage({ text: `¡ESCIPIÓN ataca! ${target?.name ?? 'El rival'} pierde su dinero temporal y todos sus gajos.`, type: 'success' });
+    }
+    setTargetMode(null);
+  };
+
+  const handleUseEscipion = () => {
+    setTargetMode('escipion');
+  };
+
   const getDialogMessage = () => {
     if (dialogType === 'no-money-vowel') {
-      return `No tienes suficiente dinero (${currentPlayer.score} €). Necesitas al menos ${VOWEL_COST} € para comprar una vocal.`;
+      return `No tienes suficiente dinero (${formatMoney(currentPlayer.score, castulo)}). Necesitas al menos ${formatMoney(VOWEL_COST, castulo)} para comprar una vocal.`;
     }
     if (dialogType === 'bote-fail') {
       return `¡Has fallado la consonante del BOTE! ¿Deseas usar tu comodín para volver a girar la ruleta?`;
@@ -353,12 +423,24 @@ export function GameControls() {
       <div className={styles.controls}>
         {isBoteRound && (
           <div className={styles.boteBanner}>
-            🏆 RONDA DEL BOTE — {state.boteAmount.toLocaleString('es-ES')}€
+            🏆 RONDA DEL BOTE — {formatMoney(state.boteAmount, castulo)}
           </div>
         )}
         <div className={styles.phaseIndicator}>
           {getPhaseIndicator()}
         </div>
+
+        {castulo && currentPlayer.hasEscipion && (
+          <div className={styles.spinSection}>
+            <button
+              onClick={handleUseEscipion}
+              className={`${styles.button} ${styles.escipionButton}`}
+              disabled={isRevealing || state.players.length < 2}
+            >
+              ⚔️ Usar a Escipión
+            </button>
+          </div>
+        )}
 
         {canSpin && (
           <div className={styles.spinSection}>
@@ -378,21 +460,21 @@ export function GameControls() {
         <div className={styles.section}>
           <div className={styles.sectionTitle}>
             {VOWELS.includes(letter.toUpperCase()) && letter
-              ? <>¡Vocal! <span className={styles.cost}>{VOWEL_COST} €</span></>
+              ? <>¡Vocal! <span className={styles.cost}>{VOWEL_COST} {unit}</span></>
               : state.wheelValue > 0 && letter
-                ? <>Consonante <span className={styles.cost}>{state.wheelValue} € por letra</span></>
+                ? <>Consonante <span className={styles.cost}>{state.wheelValue} {unit} por letra</span></>
                 : 'Escribe una letra'
             }
           </div>
 
           {state.turnPhase === 'spin' && !allVowelsGuessed && (
-            <div className={styles.info}>Puedes comprar vocales ({VOWEL_COST} € c/u) o girar la ruleta</div>
+            <div className={styles.info}>Puedes comprar vocales ({VOWEL_COST} {unit} c/u) o girar la ruleta</div>
           )}
           {state.turnPhase === 'consonant' && (
-            <div className={styles.info}>Debes decir una consonante ({state.wheelValue} € por letra)</div>
+            <div className={styles.info}>Debes decir una consonante ({state.wheelValue} {unit} por letra)</div>
           )}
           {state.turnPhase === 'vowels' && (
-            <div className={styles.info}>Puedes comprar vocales. Tienes {currentPlayer.score} €</div>
+            <div className={styles.info}>Puedes comprar vocales. Tienes {currentPlayer.score} {unit}</div>
           )}
           {state.turnPhase === 'next-action' && (
             <div className={styles.info}>Gira de nuevo o resuelve el panel</div>
@@ -475,6 +557,22 @@ export function GameControls() {
             onConfirm={handleWildcardConfirm}
             onCancel={handleWildcardCancel}
             singleAction={dialogType === 'no-money-vowel'}
+          />
+        )}
+
+        {targetMode && (
+          <TargetPicker
+            title={targetMode === 'asedio' ? '¡ASEDIO!' : '⚔️ Escipión ataca'}
+            message={
+              targetMode === 'asedio'
+                ? 'Elige al jugador que recibirá tu dinero temporal y tus gajos.'
+                : 'Elige al rival al que arrebatar su dinero temporal y todos sus gajos.'
+            }
+            players={state.players}
+            sourceId={currentPlayer.id}
+            onSelect={handleTargetSelect}
+            onCancel={targetMode === 'escipion' ? () => setTargetMode(null) : undefined}
+            castulo={castulo}
           />
         )}
       </div>

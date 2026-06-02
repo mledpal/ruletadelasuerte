@@ -327,6 +327,22 @@
   box-shadow: 0 8px 36px rgba(255, 215, 0, 0.55) !important;
 }
 
+.escipionButton {
+  width: 100%;
+  padding: 16px;
+  font-size: 1.3rem !important;
+  letter-spacing: 0.08em;
+  background: linear-gradient(135deg, #7a1212 0%, #b71c1c 50%, #e63946 100%) !important;
+  color: #fff !important;
+  border-color: rgba(231, 57, 70, 0.5) !important;
+  box-shadow: 0 4px 24px rgba(183, 28, 28, 0.4) !important;
+}
+
+.escipionButton:hover:not(:disabled) {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 8px 36px rgba(231, 57, 70, 0.6) !important;
+}
+
 /* ─── Responsive móvil ────────────────────────────────────────────── */
 @media (max-width: 600px) {
   .controls {

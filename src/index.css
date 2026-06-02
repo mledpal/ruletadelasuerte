@@ -65,6 +65,23 @@
   color-scheme: light;
 }
 
+/* ─── Modo Cástulo: ambientación iberorromana ─────────────────────────── */
+[data-castulo="true"] {
+  --color-bg: #1a0e08;
+  --color-bg-deep: #0f0805;
+  --color-surface: rgba(217, 164, 65, 0.07);
+  --color-surface-hover: rgba(217, 164, 65, 0.12);
+  --color-border: rgba(217, 164, 65, 0.18);
+  --color-gold: #d9a441;
+  --color-gold-light: #f0c674;
+  --color-gold-dim: rgba(217, 164, 65, 0.3);
+  --color-text: #f3e7d3;
+  --color-text-muted: rgba(243, 231, 211, 0.6);
+  --color-accent: #8e1538;
+  --color-teal: #1b8a8a;
+  --shadow-glow-gold: 0 0 30px rgba(217, 164, 65, 0.4);
+}
+
 body {
   margin: 0;
   min-width: 320px;

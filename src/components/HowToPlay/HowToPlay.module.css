@@ -86,6 +86,14 @@
   color: var(--color-gold);
 }
 
+.subSectionTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-gold);
+  margin: 20px 0 8px;
+  letter-spacing: 0.03em;
+}
+
 .section p,
 .section li {
   font-size: 0.97rem;

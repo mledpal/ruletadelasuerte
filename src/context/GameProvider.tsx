@@ -38,9 +38,9 @@ const initialState: GameState = {
   cells: createCellsFromPhrase('LA RULETA DE LA FORTUNA'),
   currentPlayer: 0,
   players: [
-    { id: 0, name: 'Jugador 1', score: 0, wallet: 0, hasWildcard: false },
-    { id: 1, name: 'Jugador 2', score: 0, wallet: 0, hasWildcard: false },
-    { id: 2, name: 'Jugador 3', score: 0, wallet: 0, hasWildcard: false },
+    { id: 0, name: 'Jugador 1', score: 0, wallet: 0, hasWildcard: false, hasAnibal: false, hasHimilce: false, hasEscipion: false },
+    { id: 1, name: 'Jugador 2', score: 0, wallet: 0, hasWildcard: false, hasAnibal: false, hasHimilce: false, hasEscipion: false },
+    { id: 2, name: 'Jugador 3', score: 0, wallet: 0, hasWildcard: false, hasAnibal: false, hasHimilce: false, hasEscipion: false },
   ],
   wheelValue: 0,
   lastWheelResult: null,
@@ -57,6 +57,7 @@ const initialState: GameState = {
   boteAmount: 0,
   boteWinnerId: null,
   boteRoundEnabled: false,
+  castuloMode: false,
   config: {
     letterRevealDelay: 250,
     turnChangeDelay: 1000,
@@ -68,13 +69,16 @@ const initialState: GameState = {
 function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case 'INIT_GAME': {
-      const { playerCount, rounds, wildcardEnabled, boteRoundEnabled } = action.payload;
+      const { playerCount, rounds, wildcardEnabled, boteRoundEnabled, castuloMode } = action.payload;
       const players = Array.from({ length: playerCount }, (_, i) => ({
         id: i,
         name: `Jugador ${i + 1}`,
         score: 0,
         wallet: 0,
         hasWildcard: false,
+        hasAnibal: false,
+        hasHimilce: false,
+        hasEscipion: false,
       }));
       const isBoteActive = boteRoundEnabled && playerCount >= 2;
       return {
@@ -86,6 +90,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         boteRoundEnabled: isBoteActive,
         boteAmount: isBoteActive && rounds === 1 ? 1000 : 0,
         boteWinnerId: null,
+        castuloMode,
         config: { ...initialState.config, totalRounds: rounds },
       };
     }
@@ -210,15 +215,87 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         wildcardAvailable: false,
       };
 
+    case 'AWARD_TOKEN': {
+      const { playerId, token } = action.payload;
+      const flag =
+        token === 'ANIBAL' ? 'hasAnibal' : token === 'HIMILCE' ? 'hasHimilce' : 'hasEscipion';
+      return {
+        ...state,
+        players: state.players.map((player) =>
+          player.id === playerId ? { ...player, [flag]: true } : player
+        ),
+      };
+    }
+
+    case 'USE_ESCIPION': {
+      const { sourceId, targetId } = action.payload;
+      return {
+        ...state,
+        players: state.players.map((player) => {
+          if (player.id === targetId) {
+            return {
+              ...player,
+              score: 0,
+              hasWildcard: false,
+              hasAnibal: false,
+              hasHimilce: false,
+              hasEscipion: false,
+            };
+          }
+          if (player.id === sourceId) {
+            // Escipión se consume al usarlo
+            return { ...player, hasEscipion: false };
+          }
+          return player;
+        }),
+      };
+    }
+
+    case 'ASEDIO_TRANSFER': {
+      const { sourceId, targetId } = action.payload;
+      const source = state.players.find((p) => p.id === sourceId);
+      if (!source) return state;
+      return {
+        ...state,
+        players: state.players.map((player) => {
+          if (player.id === targetId) {
+            return {
+              ...player,
+              score: player.score + source.score,
+              hasWildcard: player.hasWildcard || source.hasWildcard,
+              hasAnibal: player.hasAnibal || source.hasAnibal,
+              hasHimilce: player.hasHimilce || source.hasHimilce,
+              hasEscipion: player.hasEscipion || source.hasEscipion,
+            };
+          }
+          if (player.id === sourceId) {
+            return {
+              ...player,
+              score: 0,
+              hasWildcard: false,
+              hasAnibal: false,
+              hasHimilce: false,
+              hasEscipion: false,
+            };
+          }
+          return player;
+        }),
+      };
+    }
+
     case 'COMPLETE_ROUND':
       return {
         ...state,
         roundComplete: true,
         players: state.players.map((player) => {
           if (player.id === action.payload) {
+            const bonus = player.hasAnibal && player.hasHimilce ? 1000 : 0;
             return {
               ...player,
-              wallet: player.wallet + player.score,
+              wallet: player.wallet + player.score + bonus,
+              // El bono consume Aníbal y Himilce; si no se cobró, se conservan
+              hasAnibal: bonus > 0 ? false : player.hasAnibal,
+              hasHimilce: bonus > 0 ? false : player.hasHimilce,
             };
           }
           return {
@@ -266,7 +343,13 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         boteWinnerId: action.payload,
         players: state.players.map((player) => {
           if (player.id === action.payload) {
-            return { ...player, wallet: player.wallet + state.boteAmount + player.score };
+            const bonus = player.hasAnibal && player.hasHimilce ? 1000 : 0;
+            return {
+              ...player,
+              wallet: player.wallet + state.boteAmount + player.score + bonus,
+              hasAnibal: bonus > 0 ? false : player.hasAnibal,
+              hasHimilce: bonus > 0 ? false : player.hasHimilce,
+            };
           }
           return { ...player, score: 0 };
         }),
@@ -302,8 +385,17 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         boteRoundEnabled: state.boteRoundEnabled,
         boteAmount: 0,
         boteWinnerId: null,
+        castuloMode: state.castuloMode,
         config: { ...initialState.config, totalRounds: state.totalRounds },
-        players: state.players.map((p) => ({ ...p, score: 0, wallet: 0, hasWildcard: false })),
+        players: state.players.map((p) => ({
+          ...p,
+          score: 0,
+          wallet: 0,
+          hasWildcard: false,
+          hasAnibal: false,
+          hasHimilce: false,
+          hasEscipion: false,
+        })),
       };
 
     default:

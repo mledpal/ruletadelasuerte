@@ -1,8 +1,11 @@
 import { useGame } from '../../context/GameContext';
+import { currencyUnit } from '../../utils/currency';
 import styles from './PlayerInfo.module.css';
 
 export function PlayerInfo() {
   const { state } = useGame();
+  const castulo = state.castuloMode;
+  const unit = currencyUnit(castulo);
 
   const isBoteRound =
     state.boteRoundEnabled &&
@@ -13,7 +16,7 @@ export function PlayerInfo() {
     <>
       {isBoteRound && (
         <div className={styles.boteBanner}>
-          🏆 BOTE COMÚN: {state.boteAmount.toLocaleString('es-ES')}€
+          🏆 BOTE COMÚN: {state.boteAmount.toLocaleString('es-ES')} {unit}
         </div>
       )}
       <div className={styles.players}>
@@ -23,9 +26,14 @@ export function PlayerInfo() {
           className={`${styles.player} ${index === state.currentPlayer ? styles.active : ''}`}
         >
           <div className={styles.name}>{player.name}</div>
-          <div className={styles.score}>{player.score} €</div>
-          <div className={styles.wallet}>Cartera: {player.wallet} €</div>
-          {player.hasWildcard && <div className={styles.wildcard}>Comodín</div>}
+          <div className={styles.score}>{player.score} {unit}</div>
+          <div className={styles.wallet}>Cartera: {player.wallet} {unit}</div>
+          <div className={styles.tokens}>
+            {player.hasWildcard && <span className={styles.wildcard}>Comodín</span>}
+            {player.hasAnibal && <span className={styles.token}>Aníbal</span>}
+            {player.hasHimilce && <span className={styles.token}>Himilce</span>}
+            {player.hasEscipion && <span className={styles.tokenEscipion}>⚔️ Escipión</span>}
+          </div>
         </div>
       ))}
       </div>

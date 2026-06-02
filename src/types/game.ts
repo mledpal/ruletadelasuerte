@@ -7,7 +7,28 @@ export interface Phrase {
 
 export type CellState = 'hidden' | 'revealing' | 'visible' | 'highlighted';
 
-export type WheelResult = number | 'QUIEBRA' | 'PIERDE_TURNO' | 'COMODIN' | 'BOTE';
+export type WheelResult =
+  | number
+  | 'QUIEBRA'
+  | 'PIERDE_TURNO'
+  | 'COMODIN'
+  | 'BOTE'
+  | 'ANIBAL'
+  | 'HIMILCE'
+  | 'ESCIPION'
+  | 'ASEDIO';
+
+export type SpecialWheelResult =
+  | 'QUIEBRA'
+  | 'PIERDE_TURNO'
+  | 'COMODIN'
+  | 'BOTE'
+  | 'ANIBAL'
+  | 'HIMILCE'
+  | 'ESCIPION'
+  | 'ASEDIO';
+
+export type CastuloToken = 'ANIBAL' | 'HIMILCE' | 'ESCIPION';
 
 export type TurnPhase = 'spin' | 'consonant' | 'vowels' | 'next-action';
 
@@ -24,6 +45,9 @@ export interface Player {
   score: number;
   wallet: number;
   hasWildcard: boolean;
+  hasAnibal: boolean;
+  hasHimilce: boolean;
+  hasEscipion: boolean;
 }
 
 export interface RevealResult {
@@ -61,15 +85,16 @@ export interface GameState {
   boteAmount: number;
   boteWinnerId: number | null;
   boteRoundEnabled: boolean;
+  castuloMode: boolean;
 }
 
 export type GameAction =
-  | { type: 'INIT_GAME'; payload: { playerCount: number; rounds: number; wildcardEnabled: boolean; boteRoundEnabled: boolean } }
+  | { type: 'INIT_GAME'; payload: { playerCount: number; rounds: number; wildcardEnabled: boolean; boteRoundEnabled: boolean; castuloMode: boolean } }
   | { type: 'SET_PHRASE'; payload: { phrase: string; hint: string; category: string } }
   | { type: 'UPDATE_CELL'; payload: { id: string; state: CellState } }
   | { type: 'SET_REVEALING'; payload: boolean }
   | { type: 'SPIN_WHEEL'; payload: number }
-  | { type: 'SPIN_WHEEL_SPECIAL'; payload: 'QUIEBRA' | 'PIERDE_TURNO' | 'COMODIN' | 'BOTE' }
+  | { type: 'SPIN_WHEEL_SPECIAL'; payload: SpecialWheelResult }
   | { type: 'RESET_WHEEL' }
   | { type: 'ADD_SCORE'; payload: { playerId: number; amount: number } }
   | { type: 'DEDUCT_SCORE'; payload: { playerId: number; amount: number } }
@@ -84,4 +109,7 @@ export type GameAction =
   | { type: 'REVEAL_ALL' }
   | { type: 'RESET_GAME' }
   | { type: 'GUESS_LETTER'; payload: string }
-  | { type: 'WIN_BOTE'; payload: number };
+  | { type: 'WIN_BOTE'; payload: number }
+  | { type: 'AWARD_TOKEN'; payload: { playerId: number; token: CastuloToken } }
+  | { type: 'USE_ESCIPION'; payload: { sourceId: number; targetId: number } }
+  | { type: 'ASEDIO_TRANSFER'; payload: { sourceId: number; targetId: number } };

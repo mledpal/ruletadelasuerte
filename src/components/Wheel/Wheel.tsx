@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useGame } from '../../context/GameContext';
-import type { WheelResult } from '../../types/game';
+import type { WheelResult, SpecialWheelResult } from '../../types/game';
 import styles from './Wheel.module.css';
 
 const LIGHT_BG = new Set(['#ffd60a', '#ffd700', '#e9ecef', '#70e000']);
@@ -17,54 +17,84 @@ export function Wheel({ onResult, onClose, autoSpin }: WheelProps) {
   const [isSpinning, setIsSpinning] = useState(false);
   const [lastResult, setLastResult] = useState<WheelResult | null>(null);
 
+  const castulo = state.castuloMode;
+
   const isBoteRound =
     state.boteRoundEnabled &&
     state.currentRound === state.totalRounds &&
     state.players.length >= 2;
 
   const WHEEL_SEGMENTS = useMemo(() => {
+    // En modo Cástulo las casillas muestran solo la cifra (sin moneda).
+    const money = (n: number) => (castulo ? `${n}` : `${n}€`);
+
     const comodinSlot = state.wildcardAvailable
       ? { value: 'COMODIN' as WheelResult, color: '#ffd700', label: 'COMODÍN' }
-      : { value: 400 as WheelResult,       color: '#ffd700', label: '400€'    };
+      : { value: 400 as WheelResult,       color: '#ffd700', label: money(400) };
 
-    const boteLabel = `¡BOTE!\n${state.boteAmount.toLocaleString('es-ES')}€`;
+    const boteLabel = `¡BOTE!\n${state.boteAmount.toLocaleString('es-ES')}${castulo ? '' : '€'}`;
     const boteSlot = isBoteRound
       ? { value: 'BOTE' as WheelResult, color: '#ff1493', label: boteLabel }
-      : { value: 100 as WheelResult,    color: '#e63946', label: '100€'    };
+      : { value: 100 as WheelResult,    color: '#e63946', label: money(100) };
 
-    return [
+    const base: { value: WheelResult; color: string; label: string }[] = [
       { value: 'QUIEBRA' as WheelResult,     color: '#1a1a2e', label: 'QUIEBRA'       }, //  0
-      { value: 100,                           color: '#0096c7', label: '100€'          }, //  1
-      { value: 200,                           color: '#7b2d8b', label: '200€'          }, //  2
-      { value: 75,                            color: '#43aa8b', label: '75€'           }, //  3
-      { value: 300,                           color: '#e63946', label: '300€'          }, //  4
-      { value: 50,                            color: '#ffd60a', label: '50€'           }, //  5
-      { value: 150,                           color: '#0077b6', label: '150€'          }, //  6
+      { value: 100,                           color: '#0096c7', label: money(100)      }, //  1
+      { value: 200,                           color: '#7b2d8b', label: money(200)      }, //  2
+      { value: 75,                            color: '#43aa8b', label: money(75)       }, //  3
+      { value: 300,                           color: '#e63946', label: money(300)      }, //  4
+      { value: 50,                            color: '#ffd60a', label: money(50)       }, //  5
+      { value: 150,                           color: '#0077b6', label: money(150)      }, //  6
       { value: 'PIERDE_TURNO' as WheelResult, color: '#e9ecef', label: 'PIERDE\nTURNO' }, //  7
-      { value: 25,                            color: '#70e000', label: '25€'           }, //  8
-      { value: 400,                           color: '#f77f00', label: '400€'          }, //  9
+      { value: 25,                            color: '#70e000', label: money(25)       }, //  8
+      { value: 400,                           color: '#f77f00', label: money(400)      }, //  9
       boteSlot,                                                                           // 10
-      { value: 75,                            color: '#ffd60a', label: '75€'           }, // 11
+      { value: 75,                            color: '#ffd60a', label: money(75)       }, // 11
       { value: 'QUIEBRA' as WheelResult,     color: '#1a1a2e', label: 'QUIEBRA'       }, // 12
-      { value: 200,                           color: '#0096c7', label: '200€'          }, // 13
-      { value: 500,                           color: '#7b2d8b', label: '500€'          }, // 14
+      { value: 200,                           color: '#0096c7', label: money(200)      }, // 13
+      { value: 500,                           color: '#7b2d8b', label: money(500)      }, // 14
       { value: 'PIERDE_TURNO' as WheelResult, color: '#e9ecef', label: 'PIERDE\nTURNO' }, // 15
-      { value: 50,                            color: '#43aa8b', label: '50€'           }, // 16
-      { value: 750,                           color: '#e63946', label: '750€'          }, // 17
-      { value: 100,                           color: '#ffd60a', label: '100€'          }, // 18
-      { value: 25,                            color: '#0077b6', label: '25€'           }, // 19
-      { value: 300,                           color: '#f77f00', label: '300€'          }, // 20
-      { value: 75,                            color: '#7b2d8b', label: '75€'           }, // 21
+      { value: 50,                            color: '#43aa8b', label: money(50)       }, // 16
+      { value: 750,                           color: '#e63946', label: money(750)      }, // 17
+      { value: 100,                           color: '#ffd60a', label: money(100)      }, // 18
+      { value: 25,                            color: '#0077b6', label: money(25)       }, // 19
+      { value: 300,                           color: '#f77f00', label: money(300)      }, // 20
+      { value: 75,                            color: '#7b2d8b', label: money(75)       }, // 21
       comodinSlot,                                                                        // 22
       { value: 'PIERDE_TURNO' as WheelResult, color: '#e9ecef', label: 'PIERDE\nTURNO' }, // 23
     ];
-  }, [state.wildcardAvailable, state.boteRoundEnabled, state.currentRound, state.totalRounds, state.players.length, state.boteAmount, isBoteRound]);
+
+    if (!castulo) return base;
+
+    // Gajos exclusivos del modo Cástulo. Los coleccionables (Aníbal, Himilce,
+    // Escipión) solo aparecen si ningún jugador los posee todavía.
+    const owns = (key: 'hasAnibal' | 'hasHimilce' | 'hasEscipion') =>
+      state.players.some((p) => p[key]);
+
+    const extras: { value: WheelResult; color: string; label: string }[] = [];
+    extras.push({ value: 'ASEDIO' as WheelResult, color: '#212121', label: 'ASEDIO' });
+    if (!owns('hasAnibal'))   extras.push({ value: 'ANIBAL' as WheelResult,   color: '#7b1fa2', label: 'ANÍBAL'   });
+    if (!owns('hasHimilce'))  extras.push({ value: 'HIMILCE' as WheelResult,  color: '#00838f', label: 'HIMILCE'  });
+    if (!owns('hasEscipion')) extras.push({ value: 'ESCIPION' as WheelResult, color: '#b71c1c', label: 'ESCIPIÓN' });
+
+    // Repartir los gajos nuevos de forma uniforme entre los existentes.
+    const result = [...base];
+    const step = Math.floor(base.length / (extras.length + 1));
+    extras.forEach((seg, i) => {
+      result.splice((i + 1) * step + i, 0, seg);
+    });
+    return result;
+  }, [castulo, state.wildcardAvailable, state.players, state.boteAmount, isBoteRound]);
 
   const segmentCount = WHEEL_SEGMENTS.length;
   const segmentAngle = 360 / segmentCount;
   const R  = 240;  // radio exterior del segmento
   const CX = 260;  // centro X
   const CY = 260;  // centro Y
+
+  // Con más gajos (modo Cástulo) reducimos el tamaño del texto para que quepa.
+  const numFont     = segmentCount > 24 ? 14 : 16;
+  const specialFont = segmentCount > 24 ? 10 : 11;
 
   const createSegmentPath = (index: number): string => {
     const startAngle = (index * segmentAngle - 90) * (Math.PI / 180);
@@ -107,7 +137,7 @@ export function Wheel({ onResult, onClose, autoSpin }: WheelProps) {
       if (typeof selected.value === 'number') {
         dispatch({ type: 'SPIN_WHEEL', payload: selected.value });
       } else {
-        dispatch({ type: 'SPIN_WHEEL_SPECIAL', payload: selected.value as 'QUIEBRA' | 'PIERDE_TURNO' | 'COMODIN' | 'BOTE' });
+        dispatch({ type: 'SPIN_WHEEL_SPECIAL', payload: selected.value as SpecialWheelResult });
       }
       setLastResult(selected.value);
       setIsSpinning(false);
@@ -130,13 +160,18 @@ export function Wheel({ onResult, onClose, autoSpin }: WheelProps) {
     if (lastResult === 'PIERDE_TURNO') return '¡PIERDE TURNO!';
     if (lastResult === 'COMODIN')      return '¡COMODÍN!';
     if (lastResult === 'BOTE')         return '¡BOTE!';
-    return `${lastResult} €`;
+    if (lastResult === 'ANIBAL')       return '¡ANÍBAL!';
+    if (lastResult === 'HIMILCE')      return '¡HIMILCE!';
+    if (lastResult === 'ESCIPION')     return '¡ESCIPIÓN!';
+    if (lastResult === 'ASEDIO')       return '¡ASEDIO!';
+    // En modo Cástulo se muestra solo la cifra, sin moneda.
+    return castulo ? `${lastResult}` : `${lastResult} €`;
   };
 
   const getResultClass = () => {
     if (!lastResult) return '';
-    if (lastResult === 'QUIEBRA' || lastResult === 'PIERDE_TURNO') return styles.negativeResult;
-    if (lastResult === 'COMODIN') return styles.wildcardResult;
+    if (lastResult === 'QUIEBRA' || lastResult === 'PIERDE_TURNO' || lastResult === 'ASEDIO') return styles.negativeResult;
+    if (lastResult === 'COMODIN' || lastResult === 'ANIBAL' || lastResult === 'HIMILCE' || lastResult === 'ESCIPION') return styles.wildcardResult;
     if (lastResult === 'BOTE')    return styles.boteResult;
     return styles.positiveResult;
   };
@@ -144,12 +179,12 @@ export function Wheel({ onResult, onClose, autoSpin }: WheelProps) {
   return (
     <div className={styles.overlay}>
       <div className={styles.modalInner}>
-        <div className={styles.modalTitle}>LA RULETA DE LA SUERTE</div>
+        <div className={styles.modalTitle}>{castulo ? 'LA RULETA DE CÁSTULO' : 'LA RULETA DE LA SUERTE'}</div>
 
-        <div className={styles.wheelWrapper}>
+        <div className={`${styles.wheelWrapper} ${castulo ? styles.wheelWrapperCastulo : ''}`}>
           <div className={styles.pointer} />
           <svg
-            className={styles.wheelSvg}
+            className={`${styles.wheelSvg} ${castulo ? styles.wheelSvgCastulo : ''}`}
             width="520"
             height="520"
             viewBox="0 0 520 520"
@@ -176,8 +211,14 @@ export function Wheel({ onResult, onClose, autoSpin }: WheelProps) {
             {WHEEL_SEGMENTS.map((seg, i) => {
               const path        = createSegmentPath(i);
               const { x, y, rot } = getTextPos(i);
-              const isSpecial   = seg.value === 'QUIEBRA' || seg.value === 'PIERDE_TURNO';
               const isWildcard  = seg.value === 'COMODIN';
+              const isSpecial   =
+                seg.value === 'QUIEBRA' ||
+                seg.value === 'PIERDE_TURNO' ||
+                seg.value === 'ASEDIO' ||
+                seg.value === 'ANIBAL' ||
+                seg.value === 'HIMILCE' ||
+                seg.value === 'ESCIPION';
               const textFill    = LIGHT_BG.has(seg.color) ? '#1a1a2e' : '#ffffff';
 
               return (
@@ -197,7 +238,7 @@ export function Wheel({ onResult, onClose, autoSpin }: WheelProps) {
                   <text
                     x={x} y={isWildcard ? y + 9 : y}
                     fill={textFill}
-                    fontSize={isSpecial ? '11' : '16'}
+                    fontSize={isSpecial ? specialFont : numFont}
                     fontWeight="900"
                     textAnchor="middle" dominantBaseline="middle"
                     fontFamily="'Bebas Neue', Impact, sans-serif"
@@ -218,15 +259,28 @@ export function Wheel({ onResult, onClose, autoSpin }: WheelProps) {
             {/* Centro */}
             <circle cx={CX} cy={CY} r="57" fill="#0a0f3d" stroke="#ffd700" strokeWidth="5" />
             <circle cx={CX} cy={CY} r="51" fill="url(#hubGrad)" />
-            <text x={CX} y={CY - 14} fill="white"    fontSize="10" fontWeight="bold"
-              textAnchor="middle" dominantBaseline="middle"
-              fontFamily="'Poppins', sans-serif" letterSpacing="0.5">La ruleta</text>
-            <text x={CX} y={CY - 1}  fill="#ffd700"  fontSize="8"
-              textAnchor="middle" dominantBaseline="middle"
-              fontFamily="'Poppins', sans-serif">de la</text>
-            <text x={CX} y={CY + 14} fill="white"    fontSize="14" fontWeight="bold"
-              textAnchor="middle" dominantBaseline="middle"
-              fontFamily="'Bebas Neue', sans-serif" letterSpacing="1">SUERTE</text>
+            {castulo ? (
+              <>
+                <text x={CX} y={CY - 10} fill="white"    fontSize="9" fontWeight="bold"
+                  textAnchor="middle" dominantBaseline="middle"
+                  fontFamily="'Poppins', sans-serif" letterSpacing="0.5">La ruleta de</text>
+                <text x={CX} y={CY + 12} fill="#ffd700"  fontSize="18" fontWeight="bold"
+                  textAnchor="middle" dominantBaseline="middle"
+                  fontFamily="'Bebas Neue', sans-serif" letterSpacing="1.5">CÁSTULO</text>
+              </>
+            ) : (
+              <>
+                <text x={CX} y={CY - 14} fill="white"    fontSize="10" fontWeight="bold"
+                  textAnchor="middle" dominantBaseline="middle"
+                  fontFamily="'Poppins', sans-serif" letterSpacing="0.5">La ruleta</text>
+                <text x={CX} y={CY - 1}  fill="#ffd700"  fontSize="8"
+                  textAnchor="middle" dominantBaseline="middle"
+                  fontFamily="'Poppins', sans-serif">de la</text>
+                <text x={CX} y={CY + 14} fill="white"    fontSize="14" fontWeight="bold"
+                  textAnchor="middle" dominantBaseline="middle"
+                  fontFamily="'Bebas Neue', sans-serif" letterSpacing="1">SUERTE</text>
+              </>
+            )}
           </svg>
         </div>
 

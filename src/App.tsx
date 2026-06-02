@@ -138,7 +138,9 @@ function GameApp() {
     localStorage.removeItem(USED_KEY);
     usedRef.current = new Set();
     selectedCategoriesRef.current = selectedCategories;
-    dispatch({ type: 'INIT_GAME', payload: { playerCount, rounds, wildcardEnabled, boteRoundEnabled } });
+    // El modo Cástulo se activa solo si se elige exclusivamente la categoría CASTULO.
+    const castuloMode = selectedCategories.length === 1 && selectedCategories[0] === 'CASTULO';
+    dispatch({ type: 'INIT_GAME', payload: { playerCount, rounds, wildcardEnabled, boteRoundEnabled, castuloMode } });
     pickPhrase(phrases);
     setView('game');
   }, [phrases, dispatch, pickPhrase]);
@@ -182,12 +184,13 @@ function GameApp() {
   }
 
   return (
-    <div className="app">
+    <div className="app" data-castulo={state.castuloMode ? 'true' : undefined}>
       {state.gameComplete && (
         <WinnerModal
           players={state.players}
           boteAmount={state.boteAmount}
           boteWinnerId={state.boteWinnerId ?? null}
+          castulo={state.castuloMode}
           onNewGame={() => setView('setup')}
         />
       )}
@@ -195,7 +198,7 @@ function GameApp() {
         <button className="themeToggle" onClick={toggleTheme} title="Cambiar tema">
           {theme === 'dark' ? '☀️' : '🌙'}
         </button>
-        <h1>La Ruleta de la Fortuna</h1>
+        <h1>{state.castuloMode ? 'La Ruleta de Cástulo' : 'La Ruleta de la Fortuna'}</h1>
         {syncStatus === 'loading' && (
           <span className="syncBadge">Sincronizando frases…</span>
         )}
