@@ -123,31 +123,110 @@
 
 .section {
   margin-bottom: 16px;
-  padding: 16px;
+  padding: 18px 16px;
   background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
 }
 
 .sectionTitle {
   font-family: var(--font-display);
-  font-size: 1.2rem;
+  font-size: 1.25rem;
   letter-spacing: 0.06em;
   color: var(--color-text);
-  margin-bottom: 12px;
+  margin-bottom: 14px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
-.label {
-  display: block;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  margin-bottom: 8px;
-  font-size: 0.85rem;
+/* ─── Teclado Virtual ─────────────────────────────────────────────── */
+.keyboardGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.keyboardRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.keyboardRowLabel {
+  font-size: 0.75rem;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+  min-width: 85px;
+}
+
+.keyboardKeys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  flex: 1;
+}
+
+.keyBtn {
+  width: clamp(28px, 6vw, 36px);
+  height: clamp(34px, 7vw, 42px);
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s, background 0.12s;
+  user-select: none;
+}
+
+.consonantKey {
+  background: linear-gradient(180deg, #0284c7 0%, #0369a1 100%);
+  color: #fff;
+  border-color: #38bdf8;
+  box-shadow: 0 3px 8px rgba(2, 132, 199, 0.35);
+}
+
+.consonantKey:hover:not(:disabled) {
+  transform: translateY(-2px);
+  background: linear-gradient(180deg, #0ea5e9 0%, #0284c7 100%);
+  box-shadow: 0 5px 12px rgba(14, 165, 233, 0.5);
+}
+
+.vowelKey {
+  background: linear-gradient(180deg, #e11d48 0%, #be123c 100%);
+  color: #fff;
+  border-color: #fb7185;
+  box-shadow: 0 3px 8px rgba(225, 29, 72, 0.35);
+}
+
+.vowelKey:hover:not(:disabled) {
+  transform: translateY(-2px);
+  background: linear-gradient(180deg, #f43f5e 0%, #e11d48 100%);
+  box-shadow: 0 5px 12px rgba(244, 63, 94, 0.5);
+}
+
+.keyBtn:disabled {
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.06);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.keyUsed {
+  opacity: 0.25;
+  text-decoration: line-through;
 }
 
 .inputGroup {
@@ -158,30 +237,30 @@
 
 .input {
   flex: 1;
-  padding: 10px 14px;
-  font-size: 1.1rem;
+  padding: 12px 16px;
+  font-size: 1.15rem;
   font-family: var(--font-display);
   letter-spacing: 0.1em;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.45);
   color: var(--color-text);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
   text-transform: uppercase;
 }
 
 .input:focus {
   outline: none;
   border-color: var(--color-gold);
-  box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.15);
+  box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.2);
 }
 
 .button {
-  padding: 10px 24px;
+  padding: 11px 24px;
   font-family: var(--font-display);
-  font-size: 1.1rem;
-  letter-spacing: 0.06em;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 10px;
+  font-size: 1.15rem;
+  letter-spacing: 0.08em;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
   cursor: pointer;
   transition: transform var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
   background: rgba(30, 30, 74, 0.8);
@@ -196,55 +275,57 @@
 
 .button:disabled {
   background: rgba(255, 255, 255, 0.04);
-  color: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.25);
   cursor: not-allowed;
   border-color: rgba(255, 255, 255, 0.05);
 }
 
 .consonantButton {
-  background: linear-gradient(135deg, #0077b6, var(--color-teal));
-  border-color: rgba(0, 180, 216, 0.4);
+  background: linear-gradient(135deg, #0284c7, var(--color-teal));
+  border-color: rgba(14, 165, 233, 0.5);
   color: #fff;
 }
 
 .consonantButton:hover:not(:disabled) {
-  background: linear-gradient(135deg, #005f94, #00c8f0);
+  background: linear-gradient(135deg, #0369a1, #0284c7);
   box-shadow: var(--shadow-glow-teal);
 }
 
 .vowelButton {
-  background: linear-gradient(135deg, #c0392b, var(--color-danger));
-  border-color: rgba(255, 71, 87, 0.4);
+  background: linear-gradient(135deg, #be123c, var(--color-danger));
+  border-color: rgba(244, 63, 94, 0.5);
   color: #fff;
 }
 
 .vowelButton:hover:not(:disabled) {
-  background: linear-gradient(135deg, #a93226, #ff6b78);
-  box-shadow: 0 0 20px rgba(255, 71, 87, 0.4);
+  background: linear-gradient(135deg, #9f1239, #f43f5e);
+  box-shadow: 0 0 20px rgba(244, 63, 94, 0.4);
 }
 
 .solveButton {
-  background: linear-gradient(135deg, #c8a400, var(--color-gold));
-  border-color: rgba(255, 215, 0, 0.4);
-  color: #1a0e00;
+  background: linear-gradient(135deg, #c89800 0%, #ffd700 50%, #fff38a 100%);
+  border-color: rgba(255, 215, 0, 0.6);
+  color: #110900;
+  font-weight: 900;
 }
 
 .solveButton:hover:not(:disabled) {
-  background: linear-gradient(135deg, #e8bc00, var(--color-gold-light));
+  background: linear-gradient(135deg, #e5ae00 0%, #ffe047 50%, #ffffff 100%);
   box-shadow: var(--shadow-glow-gold);
 }
 
-.finishButton {
-  background: linear-gradient(135deg, #0077b6, var(--color-teal));
-  border-color: rgba(0, 180, 216, 0.4);
-  color: #fff;
-  width: 100%;
-  margin-top: 10px;
+.passButton {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: var(--color-text-muted);
 }
 
-.finishButton:hover:not(:disabled) {
-  background: linear-gradient(135deg, #005f94, #00c8f0);
-  box-shadow: var(--shadow-glow-teal);
+.finishButton {
+  background: linear-gradient(135deg, #0284c7, var(--color-teal));
+  border-color: rgba(14, 165, 233, 0.5);
+  color: #fff;
+  width: 100%;
+  margin-top: 12px;
 }
 
 .buttonGroup {
@@ -254,42 +335,52 @@
 }
 
 .message {
-  margin-top: 12px;
-  padding: 10px 14px;
-  border-radius: 10px;
+  margin-top: 14px;
+  padding: 12px 16px;
+  border-radius: 12px;
   font-weight: 600;
   text-align: center;
-  font-size: 0.95rem;
+  font-size: 1rem;
 }
 
 .success {
-  background: rgba(46, 213, 115, 0.12);
+  background: rgba(46, 213, 115, 0.15);
   color: var(--color-success);
-  border: 1px solid rgba(46, 213, 115, 0.3);
+  border: 1px solid rgba(46, 213, 115, 0.4);
 }
 
 .error {
-  background: rgba(255, 71, 87, 0.12);
+  background: rgba(255, 71, 87, 0.15);
   color: var(--color-danger);
-  border: 1px solid rgba(255, 71, 87, 0.3);
+  border: 1px solid rgba(255, 71, 87, 0.4);
 }
 
 .info {
-  background: rgba(0, 180, 216, 0.1);
+  background: rgba(0, 180, 216, 0.12);
   color: var(--color-teal);
-  border: 1px solid rgba(0, 180, 216, 0.3);
+  border: 1px solid rgba(0, 180, 216, 0.35);
 }
 
 .cost {
   display: inline-block;
-  background: rgba(255, 215, 0, 0.15);
-  color: var(--color-gold);
-  border: 1px solid rgba(255, 215, 0, 0.3);
-  padding: 2px 10px;
+  background: rgba(14, 165, 233, 0.2);
+  color: #38bdf8;
+  border: 1px solid rgba(14, 165, 233, 0.4);
+  padding: 2px 12px;
   border-radius: 20px;
   font-size: 0.85rem;
   font-weight: 700;
-  margin-left: 10px;
+}
+
+.costVowel {
+  display: inline-block;
+  background: rgba(244, 63, 94, 0.2);
+  color: #fb7185;
+  border: 1px solid rgba(244, 63, 94, 0.4);
+  padding: 2px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 700;
 }
 
 .warning {
@@ -313,18 +404,19 @@
 .openWheelButton {
   width: 100%;
   padding: 20px;
-  font-size: 1.5rem !important;
-  letter-spacing: 0.1em;
-  background: linear-gradient(135deg, #c8a400 0%, var(--color-gold) 50%, var(--color-gold-light) 100%) !important;
-  color: #1a0e00 !important;
-  border-color: rgba(255, 215, 0, 0.5) !important;
-  box-shadow: 0 4px 24px rgba(255, 215, 0, 0.3) !important;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  font-size: 1.6rem !important;
+  letter-spacing: 0.14em;
+  background: linear-gradient(135deg, #c89800 0%, #ffd700 45%, #fff9b3 60%, #ffd700 80%, #b38600 100%) !important;
+  color: #110900 !important;
+  border: 2px solid #fff5a5 !important;
+  box-shadow: 0 6px 30px rgba(255, 215, 0, 0.45) !important;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
+  font-weight: 900;
 }
 
 .openWheelButton:hover:not(:disabled) {
-  transform: translateY(-3px) !important;
-  box-shadow: 0 8px 36px rgba(255, 215, 0, 0.55) !important;
+  transform: translateY(-4px) scale(1.01) !important;
+  box-shadow: 0 10px 42px rgba(255, 215, 0, 0.7) !important;
 }
 
 .escipionButton {
@@ -338,20 +430,15 @@
   box-shadow: 0 4px 24px rgba(183, 28, 28, 0.4) !important;
 }
 
-.escipionButton:hover:not(:disabled) {
-  transform: translateY(-3px) !important;
-  box-shadow: 0 8px 36px rgba(231, 57, 70, 0.6) !important;
-}
-
 /* ─── Responsive móvil ────────────────────────────────────────────── */
 @media (max-width: 600px) {
   .controls {
-    padding: 14px 12px;
+    padding: 14px 10px;
     border-radius: 16px;
   }
 
   .section {
-    padding: 12px 10px;
+    padding: 14px 10px;
   }
 
   .phaseIndicator {
@@ -360,19 +447,19 @@
     margin-bottom: 14px;
   }
 
-  .letterRowLabel {
-    min-width: 70px;
-    font-size: 0.65rem;
+  .keyboardRowLabel {
+    min-width: 100%;
+    margin-bottom: 2px;
   }
 
-  .letterChip {
-    width: 28px;
-    height: 28px;
-    font-size: 0.9rem;
+  .keyBtn {
+    width: 27px;
+    height: 32px;
+    font-size: 0.95rem;
   }
 
   .button {
-    padding: 8px 16px;
+    padding: 9px 16px;
     font-size: 1rem;
   }
 
@@ -382,6 +469,8 @@
   }
 
   .inputGroup {
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: stretch;
   }
 }
+

@@ -144,10 +144,11 @@ export function GameControls() {
     }
   }, [currentPlayer.hasWildcard, currentPlayer.id, dispatch, handleChangeTurn, state.boteAmount, state.players.length, castulo]);
 
-  const handleGuessLetter = async () => {
-    if (!letter || isRevealing) return;
+  const handleGuessLetter = async (directLetter?: string) => {
+    const letterToGuess = (directLetter || letter || '').trim();
+    if (!letterToGuess || isRevealing) return;
 
-    const upperLetter = letter.toUpperCase();
+    const upperLetter = letterToGuess.toUpperCase();
     setLetter('');
 
     if (VOWELS.includes(upperLetter)) {
@@ -396,11 +397,11 @@ export function GameControls() {
       case 'spin':
         return 'Fase: Girar la ruleta · comprar vocales · o resolver';
       case 'consonant':
-        return 'Fase: Decir una consonante';
+        return `Fase: Decir una consonante por ${state.wheelValue > 0 ? `${state.wheelValue} ${unit}` : ''}`;
       case 'vowels':
-        return 'Fase: Comprar vocales (opcional)';
+        return `Fase: Comprar vocales (${VOWEL_COST} ${unit} c/u)`;
       case 'next-action':
-        return 'Fase: Girar de nuevo o resolver';
+        return 'Fase: Girar de nuevo o resolver el panel';
       default:
         return '';
     }
@@ -410,6 +411,9 @@ export function GameControls() {
     state.boteRoundEnabled &&
     state.currentRound === state.totalRounds &&
     state.players.length >= 2;
+
+  const isConsonantTurn = state.turnPhase === 'consonant';
+  const isVowelAllowed = (state.turnPhase === 'vowels' || state.turnPhase === 'spin') && !allVowelsGuessed && canBuyVowel;
 
   return (
     <>
@@ -449,7 +453,7 @@ export function GameControls() {
               className={`${styles.button} ${styles.openWheelButton}`}
               disabled={isRevealing || !hasHiddenConsonants}
             >
-              🎡 {state.turnPhase === 'next-action' ? 'Girar de Nuevo' : 'Girar la Ruleta'}
+              🎡 {state.turnPhase === 'next-action' ? 'GIRAR DE NUEVO' : '¡GIRAR LA RULETA!'}
             </button>
             {!hasHiddenConsonants && (
               <div className={styles.warning}>No quedan consonantes ocultas</div>
@@ -457,32 +461,61 @@ export function GameControls() {
           </div>
         )}
 
+        {/* Teclado Virtual Interactivo */}
         <div className={styles.section}>
           <div className={styles.sectionTitle}>
-            {VOWELS.includes(letter.toUpperCase()) && letter
-              ? <>¡Vocal! <span className={styles.cost}>{VOWEL_COST} {unit}</span></>
-              : state.wheelValue > 0 && letter
-                ? <>Consonante <span className={styles.cost}>{state.wheelValue} {unit} por letra</span></>
-                : 'Escribe una letra'
-            }
+            <span>Letras del concurso</span>
+            {isConsonantTurn && <span className={styles.cost}>{state.wheelValue} {unit} / consonante</span>}
+            {(state.turnPhase === 'vowels' || state.turnPhase === 'spin') && <span className={styles.costVowel}>{VOWEL_COST} {unit} / vocal</span>}
           </div>
 
-          {state.turnPhase === 'spin' && !allVowelsGuessed && (
-            <div className={styles.info}>Puedes comprar vocales ({VOWEL_COST} {unit} c/u) o girar la ruleta</div>
-          )}
-          {state.turnPhase === 'consonant' && (
-            <div className={styles.info}>Debes decir una consonante ({state.wheelValue} {unit} por letra)</div>
-          )}
-          {state.turnPhase === 'vowels' && (
-            <div className={styles.info}>Puedes comprar vocales. Tienes {currentPlayer.score} {unit}</div>
-          )}
-          {state.turnPhase === 'next-action' && (
-            <div className={styles.info}>Gira de nuevo o resuelve el panel</div>
-          )}
-          {allVowelsGuessed && state.turnPhase !== 'consonant' && (
-            <div className={styles.warning}>Ya has pedido todas las vocales</div>
-          )}
+          <div className={styles.keyboardGroup}>
+            {/* Fila de Vocales */}
+            <div className={styles.keyboardRow}>
+              <span className={styles.keyboardRowLabel}>Vocales:</span>
+              <div className={styles.keyboardKeys}>
+                {ALL_VOWELS.map((v) => {
+                  const isGuessed = state.guessedLetters.includes(v);
+                  const canClick = isVowelAllowed && !isGuessed && !isRevealing;
+                  return (
+                    <button
+                      key={v}
+                      type="button"
+                      className={`${styles.keyBtn} ${styles.vowelKey} ${isGuessed ? styles.keyUsed : ''}`}
+                      disabled={!canClick}
+                      onClick={() => handleGuessLetter(v)}
+                    >
+                      {v}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
+            {/* Fila de Consonantes */}
+            <div className={styles.keyboardRow}>
+              <span className={styles.keyboardRowLabel}>Consonantes:</span>
+              <div className={styles.keyboardKeys}>
+                {ALL_CONSONANTS.map((c) => {
+                  const isGuessed = state.guessedLetters.includes(c);
+                  const canClick = isConsonantTurn && !isGuessed && !isRevealing;
+                  return (
+                    <button
+                      key={c}
+                      type="button"
+                      className={`${styles.keyBtn} ${styles.consonantKey} ${isGuessed ? styles.keyUsed : ''}`}
+                      disabled={!canClick}
+                      onClick={() => handleGuessLetter(c)}
+                    >
+                      {c}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* O entrada manual con teclado físico */}
           <div className={styles.inputGroup}>
             <input
               type="text"
@@ -490,16 +523,16 @@ export function GameControls() {
               onChange={(e) => setLetter(e.target.value.slice(0, 1))}
               onKeyDown={(e) => e.key === 'Enter' && handleGuessLetter()}
               className={styles.input}
-              placeholder="Escribe una letra..."
+              placeholder="O teclea una letra..."
               maxLength={1}
               disabled={isRevealing}
             />
             <button
-              onClick={handleGuessLetter}
+              onClick={() => handleGuessLetter()}
               className={`${styles.button} ${VOWELS.includes(letter.toUpperCase()) && letter ? styles.vowelButton : styles.consonantButton}`}
               disabled={isRevealing || !letter}
             >
-              Probar letra
+              Probar Letra
             </button>
           </div>
 
@@ -513,6 +546,7 @@ export function GameControls() {
           )}
         </div>
 
+        {/* Sección de Resolver */}
         <div className={styles.section}>
           <div className={styles.sectionTitle}>Resolver el Panel</div>
           <div className={styles.inputGroup}>
@@ -520,8 +554,9 @@ export function GameControls() {
               type="text"
               value={solvePhrase}
               onChange={(e) => setSolvePhrase(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSolve()}
               className={styles.input}
-              placeholder="Escribe la frase completa"
+              placeholder="Escribe la frase completa para resolver"
               disabled={isRevealing}
             />
             <button
@@ -529,13 +564,13 @@ export function GameControls() {
               className={`${styles.button} ${styles.solveButton}`}
               disabled={isRevealing || !solvePhrase}
             >
-              Resolver
+              ¡RESOLVER!
             </button>
           </div>
         </div>
 
         <div className={styles.buttonGroup}>
-          <button onClick={handleChangeTurn} className={styles.button} disabled={isRevealing}>
+          <button onClick={handleChangeTurn} className={`${styles.button} ${styles.passButton}`} disabled={isRevealing}>
             Pasar Turno
           </button>
         </div>
@@ -579,3 +614,4 @@ export function GameControls() {
     </>
   );
 }
+

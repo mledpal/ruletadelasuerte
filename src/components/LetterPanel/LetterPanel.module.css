@@ -1,33 +1,62 @@
 .panel {
-  background: var(--color-bg-deep);
-  border: 1px solid rgba(255, 215, 0, 0.15);
-  padding: 32px 28px;
+  background: linear-gradient(180deg, #090e24 0%, #040612 100%);
+  border: 3px solid #1e293b;
+  padding: clamp(20px, 4vw, 36px) clamp(16px, 3vw, 32px);
   border-radius: 24px;
-  box-shadow: var(--shadow-card), 0 0 60px rgba(255, 215, 0, 0.05);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.7),
+    0 0 0 1px rgba(255, 215, 0, 0.2),
+    0 0 50px rgba(14, 165, 233, 0.15),
+    inset 0 1px 1px rgba(255, 255, 255, 0.1);
   overflow: hidden;
+  position: relative;
+}
+
+.panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, transparent, #ffd700, transparent);
+  opacity: 0.8;
 }
 
 .hintSection {
   text-align: center;
   margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
 }
 
 .category {
+  display: inline-block;
   font-family: var(--font-display);
-  font-size: 1.6rem;
-  letter-spacing: 0.12em;
-  background: linear-gradient(135deg, var(--color-gold) 0%, var(--color-gold-light) 100%);
+  font-size: clamp(1.4rem, 3.5vw, 2.2rem);
+  letter-spacing: 0.15em;
+  background: linear-gradient(135deg, #fff9b3 0%, var(--color-gold) 45%, #ffd700 80%, #fff 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  margin-bottom: 6px;
+  text-transform: uppercase;
+  filter: drop-shadow(0 2px 10px rgba(255, 215, 0, 0.45));
+  padding: 4px 18px;
+  border-radius: 12px;
+  background-color: rgba(255, 215, 0, 0.05);
+  border: 1px solid rgba(255, 215, 0, 0.25);
+  box-shadow: inset 0 0 16px rgba(255, 215, 0, 0.08);
 }
 
 .hint {
   color: var(--color-text-muted);
-  font-size: 1rem;
+  font-size: clamp(0.9rem, 2vw, 1.15rem);
   font-style: italic;
-  font-weight: 400;
+  font-weight: 500;
+  max-width: 90%;
+  line-height: 1.4;
 }
 
 .letters {
@@ -35,7 +64,8 @@
   flex-wrap: wrap;
   justify-content: center;
   align-items: center;
-  gap: 8px 28px;
+  gap: 10px 28px;
+  padding: 8px 0;
 }
 
 .word {
@@ -44,18 +74,21 @@
   flex-shrink: 0;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 600px) {
   .panel {
     padding: 16px 10px;
-    border-radius: 16px;
+    border-radius: 18px;
+    border-width: 2px;
   }
 
   .hintSection {
     margin-bottom: 14px;
+    gap: 4px;
   }
 
   .category {
-    font-size: 1.2rem;
+    font-size: 1.25rem;
+    padding: 3px 12px;
   }
 
   .hint {
@@ -63,10 +96,11 @@
   }
 
   .letters {
-    gap: 6px 14px;
+    gap: 6px 16px;
   }
 
   .word {
     gap: 3px;
   }
 }
+
