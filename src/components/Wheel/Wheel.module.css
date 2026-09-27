@@ -56,12 +56,7 @@
     drop-shadow(0 0 50px rgba(255, 215, 0, 0.35))
     drop-shadow(0 20px 60px rgba(0, 0, 0, 0.95));
   user-select: none;
-  cursor: grab;
   touch-action: none;
-}
-
-.threeCanvasContainer:active {
-  cursor: grabbing;
 }
 
 /* ─── Modo Cástulo: ruleta más grande y vistosa ───────────────────────── */
@@ -99,14 +94,110 @@
   animation: pulse 1s ease-in-out infinite;
 }
 
-.spinIcon {
-  display: inline-block;
-  animation: spinIconAnim 2s linear infinite;
+/* ─── Medidor de potencia ────────────────────────────────────────────── */
+.powerPanel {
+  width: min(420px, calc(100vw - 48px));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: opacity var(--transition-medium);
 }
 
-@keyframes spinIconAnim {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+.powerLocked {
+  opacity: 0.55;
+}
+
+.powerHeader,
+.powerScale {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-display);
+  letter-spacing: 0.14em;
+  color: var(--color-text-muted);
+  user-select: none;
+}
+
+.powerHeader {
+  font-size: 1.1rem;
+}
+
+.powerScale {
+  font-size: 0.85rem;
+}
+
+.powerValue {
+  color: var(--color-gold);
+  min-width: 4ch;
+  text-align: right;
+}
+
+/* --power (0-1) lo actualiza el bucle de animación en cada frame */
+.powerTrack {
+  --power: 0;
+  position: relative;
+  height: 22px;
+  border-radius: 11px;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid var(--color-gold-dim);
+  box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.7);
+  overflow: hidden;
+}
+
+.powerFill {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, var(--color-success) 0%, var(--color-gold) 55%, var(--color-danger) 100%);
+  clip-path: inset(0 calc((1 - var(--power)) * 100%) 0 0);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.35), inset 0 -3px 6px rgba(0, 0, 0, 0.35);
+}
+
+.powerMarker {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  left: calc(var(--power) * 100%);
+  width: 4px;
+  margin-left: -2px;
+  background: var(--color-text);
+  box-shadow: 0 0 10px var(--color-text);
+  border-radius: 2px;
+}
+
+.spinBtnCharging {
+  transform: scale(0.97);
+  animation: chargeGlow 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes chargeGlow {
+  from { box-shadow: 0 0 18px var(--color-gold-dim); }
+  to   { box-shadow: 0 0 44px var(--color-gold); }
+}
+
+.spinBtn {
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.hint {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  text-align: center;
+  max-width: 420px;
+}
+
+.kbd {
+  display: inline-block;
+  padding: 1px 8px;
+  margin: 0 2px;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-bottom-width: 3px;
+  border-radius: 6px;
+  background: var(--color-surface);
 }
 
 .spinBtn {

@@ -252,3 +252,49 @@ export function playTransition(): void {
     void 0;
   }
 }
+
+/** Impulso de lanzamiento de la ruleta: golpe seco de la mano + roce de aire proporcional a la potencia (0-1) */
+export function playWheelLaunch(power = 0.5): void {
+  try {
+    const ctx = getAudioContext();
+    const now = ctx.currentTime;
+    const dur = 0.35 + power * 0.45;
+
+    // Roce de aire: ruido blanco filtrado con barrido descendente
+    const buffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * dur), ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+
+    const noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.Q.setValueAtTime(0.9, now);
+    filter.frequency.setValueAtTime(500 + power * 1100, now);
+    filter.frequency.exponentialRampToValueAtTime(180, now + dur);
+    const noiseGain = ctx.createGain();
+    noiseGain.gain.setValueAtTime(0.001, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.08 + power * 0.14, now + 0.04);
+    noiseGain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+    noise.connect(filter);
+    filter.connect(noiseGain);
+    noiseGain.connect(ctx.destination);
+    noise.start(now);
+    noise.stop(now + dur);
+
+    // Golpe grave del empujón
+    const osc = ctx.createOscillator();
+    const thumpGain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(150, now);
+    osc.frequency.exponentialRampToValueAtTime(50, now + 0.16);
+    thumpGain.gain.setValueAtTime(0.2 + power * 0.2, now);
+    thumpGain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+    osc.connect(thumpGain);
+    thumpGain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.21);
+  } catch {
+    void 0;
+  }
+}

@@ -24,7 +24,7 @@ yarn deploy        # Build + scp a ruleta.ledemar.es (servidor personal)
 ### Estado global: Context + useReducer
 
 - `src/context/GameContext.ts` — contexto + hook `useGame()` (lanza error fuera del provider).
-- `src/context/GameProvider.tsx` — `gameReducer` (24 tipos de acción) + estado inicial. **Único lugar donde se modifica el estado**, siempre de forma inmutable (spread).
+- `src/context/GameProvider.tsx` — `gameReducer` (25 tipos de acción) + estado inicial. **Único lugar donde se modifica el estado**, siempre de forma inmutable (spread).
 - El estado completo se **persiste en localStorage** en cada cambio (`SAVE_KEY` en GameProvider) para poder reanudar la partida tras recargar. `RESET_GAME` limpia el guardado. Al añadir campos a `GameState`, ten en cuenta que un guardado antiguo puede no tenerlos.
 
 ### Tipos: fuente única de verdad
@@ -78,4 +78,6 @@ Si `boteRoundEnabled` (requiere ≥2 jugadores), la última ronda acumula un bot
 - Componentes en carpetas PascalCase bajo `src/components/`, cada una con `.tsx` + `.module.css`. **Exportaciones nombradas** (no `export default`, salvo `App`). Props con `interface` local. `import type` para tipos.
 - **Solo CSS Modules**, sin estilos inline. Tema claro/oscuro vía variables CSS en `src/index.css` (`:root` = oscuro, `[data-theme="light"]` = claro, alternado por `useTheme`). **Nunca colores en hexadecimal en componentes**: usa `var(--color-gold)`, `var(--color-text)`, etc.
 - Audio sintetizado con Web Audio API en `src/utils/audio.ts` (`playDing`, `playError`, `playSuccess`, `playTransition`); sin librerías.
-- La ruleta es un SVG de 24 casillas definidas como array estático en `Wheel.tsx`; la rotación normaliza el ángulo acumulado para evitar desfase tras varios giros.
+- La ruleta (`Wheel.tsx`) es una escena **Three.js** (24 casillas, más las de Cástulo) con un único bucle `requestAnimationFrame`; el estado por frame vive en refs, no en React.
+  - Lanzamiento por potencia: mantener **barra espaciadora** (o el botón) carga una energía que sube y baja a velocidad variable; al soltar, recorre de ¼ de vuelta (0 %) a 1½ vueltas (100 %). La casilla resultante sale del ángulo final, no se sortea.
+  - La posición final se guarda en `state.wheelStop` (`SET_WHEEL_STOP`) y el siguiente giro parte de esa misma casilla.

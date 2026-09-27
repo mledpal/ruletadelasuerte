@@ -419,7 +419,6 @@ export function GameControls() {
     <>
       {showWheelModal && (
         <Wheel
-          autoSpin
           onResult={handleWheelResult}
           onClose={() => setShowWheelModal(false)}
         />

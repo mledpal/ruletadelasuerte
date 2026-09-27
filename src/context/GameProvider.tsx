@@ -13,6 +13,7 @@ function loadSavedState(): GameState | null {
     return {
       ...saved,
       isRevealing: false,
+      wheelStop: saved.wheelStop ?? null, // guardados antiguos no tienen este campo
       cells: saved.cells.map((c) =>
         c.state === 'revealing' ? { ...c, state: 'visible' } : c
       ),
@@ -58,6 +59,7 @@ const initialState: GameState = {
   boteWinnerId: null,
   boteRoundEnabled: false,
   castuloMode: false,
+  wheelStop: null,
   config: {
     letterRevealDelay: 250,
     turnChangeDelay: 1000,
@@ -136,6 +138,12 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         wheelValue: 0,
         lastWheelResult: action.payload,
         hasSpunWheel: true,
+      };
+
+    case 'SET_WHEEL_STOP':
+      return {
+        ...state,
+        wheelStop: action.payload,
       };
 
     case 'RESET_WHEEL':

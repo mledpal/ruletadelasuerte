@@ -62,6 +62,13 @@ export interface GameConfig {
   totalRounds: number;
 }
 
+/** Posición en la que se detuvo la ruleta, para que el siguiente giro parta de ahí */
+export interface WheelStop {
+  rotation: number; // grados en sentido horario, normalizados a [0, 360)
+  value: WheelResult;
+  label: string;
+}
+
 export interface GameState {
   phrase: string;
   hint: string;
@@ -86,6 +93,7 @@ export interface GameState {
   boteWinnerId: number | null;
   boteRoundEnabled: boolean;
   castuloMode: boolean;
+  wheelStop: WheelStop | null;
 }
 
 export type GameAction =
@@ -96,6 +104,7 @@ export type GameAction =
   | { type: 'SPIN_WHEEL'; payload: number }
   | { type: 'SPIN_WHEEL_SPECIAL'; payload: SpecialWheelResult }
   | { type: 'RESET_WHEEL' }
+  | { type: 'SET_WHEEL_STOP'; payload: WheelStop }
   | { type: 'ADD_SCORE'; payload: { playerId: number; amount: number } }
   | { type: 'DEDUCT_SCORE'; payload: { playerId: number; amount: number } }
   | { type: 'BANKRUPT'; payload: number }
