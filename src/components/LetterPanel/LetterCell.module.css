@@ -1,18 +1,19 @@
 .cell {
-  width: clamp(34px, 8.5vw, 54px);
-  height: clamp(44px, 10.5vw, 68px);
+  /* El tamaño lo calcula .letters (LetterPanel) según la palabra más larga */
+  width: var(--cell-w, clamp(34px, 8.5vw, 54px));
+  height: calc(var(--cell-w, clamp(34px, 8.5vw, 54px)) * 1.26);
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: var(--font-display);
-  font-size: clamp(1.2rem, 4vw, 2.2rem);
+  font-size: calc(var(--cell-w, clamp(34px, 8.5vw, 54px)) * 0.64);
   letter-spacing: 0.04em;
-  border-radius: 8px;
-  margin: clamp(2px, 0.4vw, 4px);
+  border-radius: clamp(4px, calc(var(--cell-w, 54px) * 0.15), 8px);
   transition: all var(--transition-medium);
   border: 2px solid transparent;
   user-select: none;
   perspective: 600px;
+  flex-shrink: 0;
 }
 
 .hidden {

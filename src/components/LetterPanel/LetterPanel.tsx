@@ -1,5 +1,6 @@
 import { useGame } from '../../context/GameContext';
 import { LetterCell } from './LetterCell';
+import type { CSSProperties } from 'react';
 import type { LetterCell as LetterCellType } from '../../types/game';
 import styles from './LetterPanel.module.css';
 
@@ -21,13 +22,17 @@ export function LetterPanel() {
   }
   if (current.length > 0) words.push(current);
 
+  // Longitud de la palabra más larga: el CSS ajusta el tamaño de casilla para que quepa
+  const maxLetters = Math.max(1, ...words.map((w) => w.length));
+  const lettersVars = { '--max-letters': maxLetters } as CSSProperties;
+
   return (
     <div className={styles.panel}>
       <div className={styles.hintSection}>
         <div className={styles.category}>{state.category}</div>
         <div className={styles.hint}>{state.hint}</div>
       </div>
-      <div className={styles.letters}>
+      <div className={styles.letters} style={lettersVars}>
         {words.map((word, wi) => (
           <div key={wi} className={styles.word}>
             {word.map((cell) => (

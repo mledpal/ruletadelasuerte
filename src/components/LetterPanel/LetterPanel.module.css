@@ -59,7 +59,19 @@
   line-height: 1.4;
 }
 
+/*
+ * Las casillas se dimensionan para que la palabra más larga (--max-letters,
+ * fijada desde LetterPanel.tsx) quepa siempre en una línea del panel.
+ * Las palabras nunca se parten: si no caben, pasan a la línea siguiente
+ * y el panel crece en altura.
+ */
 .letters {
+  container-type: inline-size;
+  --cell-gap: clamp(4px, 1.2vw, 12px);
+  --cell-w: min(
+    clamp(34px, 8.5vw, 54px),
+    calc((100cqw - (var(--max-letters, 1) - 1) * var(--cell-gap)) / var(--max-letters, 1))
+  );
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
@@ -70,13 +82,13 @@
 
 .word {
   display: flex;
-  gap: 6px;
+  gap: var(--cell-gap);
   flex-shrink: 0;
 }
 
 @media (max-width: 600px) {
   .panel {
-    padding: 16px 10px;
+    padding: 16px 6px;
     border-radius: 18px;
     border-width: 2px;
   }
@@ -99,8 +111,5 @@
     gap: 6px 16px;
   }
 
-  .word {
-    gap: 3px;
-  }
 }
 
