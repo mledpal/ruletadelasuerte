@@ -17,6 +17,13 @@ const MAX_SPIN_DEG = 540;
 const WINDUP_DEG = 6;
 const BULB_COUNT = 32;
 
+// Vista con zoom (contenedor apaisado, móvil): ventana sobre el arco superior.
+// Unidades de la escena: radio de la cara 2.24, lengüeta en y ≈ 2.42.
+const ZOOM_MIN_ASPECT = 1.15;
+const ZOOM_CENTER_Y = 1.66;
+const ZOOM_HALF_WIDTH = 1.45;
+const ZOOM_HALF_HEIGHT = 0.95;
+
 type SpinPhase = 'ready' | 'charging' | 'spinning' | 'done';
 
 interface WheelSegment {
@@ -47,13 +54,14 @@ function buildSegments(state: GameState): WheelSegment[] {
     state.boteRoundEnabled &&
     state.currentRound === state.totalRounds &&
     state.players.length >= 2;
-  const money = (n: number) => (castulo ? `${n}` : `${n}€`);
+  // Sin símbolo de moneda en los gajos: en la textura el «€» de Bebas Neue se confunde con un 8
+  const money = (n: number) => `${n}`;
 
   const comodinSlot: WheelSegment = state.wildcardAvailable
     ? { value: 'COMODIN', color: '#f59e0b', label: 'COMODÍN', textColor: '#1a0e00', isSpecial: true }
     : { value: 400,       color: '#ffd700', label: money(400), textColor: '#1a0e00' };
 
-  const boteLabel = `¡BOTE!\n${state.boteAmount.toLocaleString('es-ES')}${castulo ? '' : '€'}`;
+  const boteLabel = `¡BOTE!\n${state.boteAmount.toLocaleString('es-ES')}`;
   const boteSlot: WheelSegment = isBoteRound
     ? { value: 'BOTE', color: '#ec4899', label: boteLabel,  textColor: '#ffffff', isSpecial: true }
     : { value: 100,    color: '#ef4444', label: money(100), textColor: '#ffffff' };
@@ -273,16 +281,32 @@ export function Wheel({ onResult, onClose }: WheelProps) {
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(36, width / height, 0.1, 100);
-    // Encuadra la ruleta completa sea cual sea la proporción del contenedor
+    /*
+     * Encuadre según la proporción del contenedor:
+     * - Cuadrado (escritorio): la ruleta completa.
+     * - Apaisado (móvil, lo fija el CSS): zoom sobre el arco superior, de modo
+     *   que se ven a gran tamaño la casilla bajo la lengüeta y sus vecinas.
+     */
     const frameCamera = (aspect: number) => {
       camera.aspect = aspect;
-      const fitRadius = 2.62;
       const vHalf = THREE.MathUtils.degToRad(camera.fov / 2);
       const hHalf = Math.atan(Math.tan(vHalf) * aspect);
-      const dist = fitRadius / Math.sin(Math.min(vHalf, hHalf));
-      const tilt = THREE.MathUtils.degToRad(24);
-      camera.position.set(0, -Math.sin(tilt) * dist, Math.cos(tilt) * dist);
-      camera.lookAt(0, 0.02, 0);
+      if (aspect > ZOOM_MIN_ASPECT) {
+        const target = new THREE.Vector3(0, ZOOM_CENTER_Y, 0);
+        const dist = Math.max(
+          ZOOM_HALF_WIDTH / Math.tan(hHalf),
+          ZOOM_HALF_HEIGHT / Math.tan(vHalf),
+        );
+        const tilt = THREE.MathUtils.degToRad(14);
+        camera.position.set(0, target.y - Math.sin(tilt) * dist, Math.cos(tilt) * dist);
+        camera.lookAt(target);
+      } else {
+        const fitRadius = 2.62;
+        const dist = fitRadius / Math.sin(Math.min(vHalf, hHalf));
+        const tilt = THREE.MathUtils.degToRad(24);
+        camera.position.set(0, -Math.sin(tilt) * dist, Math.cos(tilt) * dist);
+        camera.lookAt(0, 0.02, 0);
+      }
       camera.updateProjectionMatrix();
     };
     frameCamera(width / height);
@@ -867,8 +891,11 @@ export function Wheel({ onResult, onClose }: WheelProps) {
               >
                 {phase === 'charging' ? '¡SUELTA PARA LANZAR!' : 'MANTÉN PARA CARGAR'}
               </button>
-              <div className={styles.hint}>
+              <div className={`${styles.hint} ${styles.hintKeyboard}`}>
                 Mantén pulsada la <kbd className={styles.kbd}>BARRA ESPACIADORA</kbd> y suéltala en el momento justo
+              </div>
+              <div className={`${styles.hint} ${styles.hintTouch}`}>
+                Mantén pulsado el botón y suéltalo en el momento justo
               </div>
             </>
           )}

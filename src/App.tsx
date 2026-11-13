@@ -204,8 +204,9 @@ function GameApp() {
         )}
         <div className="headerRight">
           {view === 'game' && (
-            <button className="managePhrases" onClick={() => setView('phrases')}>
-              Gestionar Frases
+            <button className="managePhrases" onClick={() => setView('phrases')} title="Gestionar frases">
+              <span className="labelLong">Gestionar Frases</span>
+              <span className="labelShort">Frases</span>
             </button>
           )}
           <button className="howToPlay" onClick={handleOpenInstructions} title="Cómo se juega">

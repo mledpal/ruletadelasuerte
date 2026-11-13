@@ -393,16 +393,17 @@ export function GameControls() {
   };
 
   const getPhaseIndicator = () => {
+    const who = currentPlayer.name;
     if (pendingBote) return '🏆 ¡Resuelve el panel para ganar el BOTE!';
     switch (state.turnPhase) {
       case 'spin':
-        return 'Fase: Girar la ruleta · comprar vocales · o resolver';
+        return `${who}: gira, compra vocal o resuelve`;
       case 'consonant':
-        return `Fase: Decir una consonante por ${state.wheelValue > 0 ? `${state.wheelValue} ${unit}` : ''}`;
+        return `${who}: di una consonante${state.wheelValue > 0 ? ` (${state.wheelValue} ${unit})` : ''}`;
       case 'vowels':
-        return `Fase: Comprar vocales (${VOWEL_COST} ${unit} c/u)`;
+        return `${who}: compra vocales (${VOWEL_COST} ${unit} c/u)`;
       case 'next-action':
-        return 'Fase: Girar de nuevo o resolver el panel';
+        return `${who}: gira de nuevo o resuelve`;
       default:
         return '';
     }
@@ -412,6 +413,15 @@ export function GameControls() {
     state.boteRoundEnabled &&
     state.currentRound === state.totalRounds &&
     state.players.length >= 2;
+
+  // Letras ya pedidas que aparecen en el panel (para colorear las teclas usadas)
+  const foundLetters = new Set(
+    state.cells.filter((c) => c.letter && c.state !== 'hidden').map((c) => baseLetter(c.letter as string))
+  );
+  const usedKeyClass = (l: string) =>
+    state.guessedLetters.includes(l)
+      ? `${styles.keyUsed} ${foundLetters.has(l) ? styles.keyFound : styles.keyMissed}`
+      : '';
 
   const isConsonantTurn = state.turnPhase === 'consonant';
   const isVowelAllowed = (state.turnPhase === 'vowels' || state.turnPhase === 'spin') && !allVowelsGuessed && canBuyVowel;
@@ -432,6 +442,13 @@ export function GameControls() {
         )}
         <div className={styles.phaseIndicator}>
           {getPhaseIndicator()}
+        </div>
+
+        {/* Justo bajo la fase para que se vea sin hacer scroll en el móvil */}
+        <div className={styles.messageSlot} aria-live="polite">
+          {message && (
+            <div className={`${styles.message} ${styles[message.type]}`}>{message.text}</div>
+          )}
         </div>
 
         {castulo && currentPlayer.hasEscipion && (
@@ -481,7 +498,7 @@ export function GameControls() {
                     <button
                       key={v}
                       type="button"
-                      className={`${styles.keyBtn} ${styles.vowelKey} ${isGuessed ? styles.keyUsed : ''}`}
+                      className={`${styles.keyBtn} ${styles.vowelKey} ${usedKeyClass(v)}`}
                       disabled={!canClick}
                       onClick={() => handleGuessLetter(v)}
                     >
@@ -503,7 +520,7 @@ export function GameControls() {
                     <button
                       key={c}
                       type="button"
-                      className={`${styles.keyBtn} ${styles.consonantKey} ${isGuessed ? styles.keyUsed : ''}`}
+                      className={`${styles.keyBtn} ${styles.consonantKey} ${usedKeyClass(c)}`}
                       disabled={!canClick}
                       onClick={() => handleGuessLetter(c)}
                     >
@@ -515,8 +532,8 @@ export function GameControls() {
             </div>
           </div>
 
-          {/* O entrada manual con teclado físico */}
-          <div className={styles.inputGroup}>
+          {/* O entrada manual con teclado físico (oculta en pantallas táctiles) */}
+          <div className={`${styles.inputGroup} ${styles.manualInput}`}>
             <input
               type="text"
               value={letter}
@@ -549,14 +566,19 @@ export function GameControls() {
         {/* Sección de Resolver */}
         <div className={styles.section}>
           <div className={styles.sectionTitle}>Resolver el Panel</div>
-          <div className={styles.inputGroup}>
+          <div className={`${styles.inputGroup} ${styles.solveGroup}`}>
             <input
               type="text"
               value={solvePhrase}
               onChange={(e) => setSolvePhrase(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSolve()}
               className={styles.input}
-              placeholder="Escribe la frase completa para resolver"
+              placeholder="Escribe la frase completa"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="characters"
+              spellCheck={false}
+              enterKeyHint="go"
               disabled={isRevealing}
             />
             <button
@@ -576,15 +598,14 @@ export function GameControls() {
         </div>
 
         {state.guessedLetters.length > 0 && (
-          <UsedLetters
-            guessed={state.guessedLetters}
-            cells={state.cells}
-          />
+          <div className={styles.usedLettersDesktop}>
+            <UsedLetters
+              guessed={state.guessedLetters}
+              cells={state.cells}
+            />
+          </div>
         )}
 
-        {message && (
-          <div className={`${styles.message} ${styles[message.type]}`}>{message.text}</div>
-        )}
 
         {dialogType && (
           <Dialog

@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { useGame } from '../../context/GameContext';
 import { currencyUnit } from '../../utils/currency';
 import styles from './PlayerInfo.module.css';
@@ -12,6 +13,18 @@ export function PlayerInfo() {
     state.currentRound === state.totalRounds &&
     state.players.length >= 2;
 
+  // En el móvil la tira de marcadores se desplaza en horizontal: mantener visible al jugador en turno
+  const stripRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const strip = stripRef.current;
+    const card = strip?.children[state.currentPlayer] as HTMLElement | undefined;
+    if (!strip || !card || strip.scrollWidth <= strip.clientWidth) return;
+    const left = card.offsetLeft - strip.offsetLeft;
+    if (left < strip.scrollLeft || left + card.offsetWidth > strip.scrollLeft + strip.clientWidth) {
+      strip.scrollTo({ left: left - 8, behavior: 'smooth' });
+    }
+  }, [state.currentPlayer]);
+
   const playerColorClasses = [styles.playerBlue, styles.playerYellow, styles.playerPink, styles.playerGreen, styles.playerPurple, styles.playerOrange];
 
   return (
@@ -21,7 +34,7 @@ export function PlayerInfo() {
           🏆 BOTE COMÚN: {state.boteAmount.toLocaleString('es-ES')} {unit}
         </div>
       )}
-      <div className={styles.players}>
+      <div ref={stripRef} className={styles.players}>
         {state.players.map((player, index) => {
           const isActive = index === state.currentPlayer;
           const colorClass = playerColorClasses[index % playerColorClasses.length];

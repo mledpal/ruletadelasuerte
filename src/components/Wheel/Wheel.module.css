@@ -10,6 +10,7 @@
   animation: overlayIn 0.25s ease-out;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
+  overflow-x: hidden;
   overflow-y: auto;
 }
 
@@ -19,7 +20,9 @@
   align-items: center;
   gap: 16px;
   padding: 20px 16px 28px;
-  max-width: 98vw;
+  width: 100%;
+  max-width: 720px;
+  margin: auto;
 }
 
 /* ─── Título ──────────────────────────────────────────────────────────── */
@@ -47,10 +50,13 @@
   padding: 4px;
 }
 
+/*
+ * La proporción del contenedor decide el encuadre de la cámara (Wheel.tsx):
+ * cuadrado = ruleta completa; apaisado = zoom sobre la lengüeta.
+ */
 .threeCanvasContainer {
-  width: min(540px, calc(100vw - 32px));
-  height: min(540px, calc(100vw - 32px));
-  max-height: 60vh;
+  width: min(540px, calc(100vw - 40px), 60vh);
+  height: min(540px, calc(100vw - 40px), 60vh);
   border-radius: 50%;
   filter:
     drop-shadow(0 0 50px rgba(255, 215, 0, 0.35))
@@ -65,8 +71,8 @@
 }
 
 .wheelWrapperCastulo .threeCanvasContainer {
-  width: min(580px, calc(100vw - 28px));
-  height: min(580px, calc(100vw - 28px));
+  width: min(580px, calc(100vw - 40px), 62vh);
+  height: min(580px, calc(100vw - 40px), 62vh);
   filter:
     drop-shadow(0 0 55px rgba(217, 164, 65, 0.6))
     drop-shadow(0 22px 65px rgba(0, 0, 0, 0.95));
@@ -302,16 +308,117 @@
   to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-/* ─── Responsive móvil ────────────────────────────────────────────────── */
-@media (max-width: 600px) {
-  .modalInner {
-    padding: 12px 6px 18px;
-    gap: 10px;
+/* Indicaciones: teclado en escritorio, botón en pantallas táctiles */
+.hintTouch {
+  display: none;
+}
+
+@media (pointer: coarse) {
+  .hintKeyboard {
+    display: none;
   }
 
-  .pointerAssembly {
-    top: -4px;
-    transform: scale(0.85);
+  .hintTouch {
+    display: block;
+  }
+}
+
+/* ─── Responsive móvil: ventana apaisada con zoom sobre la lengüeta ─── */
+@media (max-width: 640px) {
+  .modalInner {
+    padding: 14px 12px 20px;
+    gap: 14px;
+  }
+
+  .modalTitle {
+    font-size: 1.5rem;
+    letter-spacing: 0.12em;
+  }
+
+  .wheelWrapper {
+    width: 100%;
+    padding: 0;
+  }
+
+  .threeCanvasContainer,
+  .wheelWrapperCastulo .threeCanvasContainer {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 4 / 3;
+    max-height: 50vh;
+    border-radius: 20px;
+    border: 2px solid var(--color-gold-dim);
+    background: radial-gradient(ellipse at 50% 0%, rgba(255, 215, 0, 0.12) 0%, transparent 70%);
+    /* drop-shadow es caro en móvil y recortaría el rectángulo */
+    filter: none;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7), inset 0 0 30px rgba(0, 0, 0, 0.6);
+    overflow: hidden;
+  }
+
+  .wheelWrapperCastulo {
+    filter: none;
+  }
+
+  .resultArea {
+    width: 100%;
+  }
+
+  .powerPanel {
+    width: 100%;
+  }
+
+  .spinBtn {
+    width: 100%;
+    padding: 18px 12px;
+    font-size: 1.6rem;
+    letter-spacing: 0.1em;
+  }
+
+  .spinBtn:hover:not(:disabled) {
+    transform: none;
+  }
+}
+
+/* Móvil en horizontal: poca altura, ventana más panorámica */
+@media (max-height: 520px) and (orientation: landscape) {
+  .modalInner {
+    padding: 8px 12px 12px;
+    gap: 8px;
+  }
+
+  .modalTitle {
+    display: none;
+  }
+
+  .threeCanvasContainer,
+  .wheelWrapperCastulo .threeCanvasContainer {
+    width: min(640px, calc(100vw - 24px));
+    height: auto;
+    aspect-ratio: 2 / 1;
+    max-height: 50vh;
+    border-radius: 20px;
+    filter: none;
+    overflow: hidden;
+  }
+
+  .resultArea {
+    min-height: 0;
+    gap: 6px;
+  }
+
+  .powerScale,
+  .hint {
+    display: none;
+  }
+
+  .spinBtn {
+    padding: 10px 40px;
+    font-size: 1.3rem;
+  }
+
+  .result {
+    font-size: 2rem;
+    padding: 6px 28px;
   }
 }
 

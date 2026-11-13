@@ -83,3 +83,26 @@
   from { transform: translateY(30px) scale(0.95); opacity: 0; }
   to { transform: translateY(0) scale(1); opacity: 1; }
 }
+
+@media (max-width: 600px) {
+  .dialog {
+    padding: 26px 18px 20px;
+    width: calc(100% - 24px);
+    border-radius: 18px;
+  }
+
+  .message {
+    font-size: 1.05rem;
+    margin-bottom: 22px;
+    line-height: 1.5;
+  }
+
+  .buttons {
+    gap: 10px;
+  }
+
+  .button {
+    flex: 1;
+    padding: 13px 12px;
+  }
+}
