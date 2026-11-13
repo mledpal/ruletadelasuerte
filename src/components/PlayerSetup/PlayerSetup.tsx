@@ -1,5 +1,24 @@
 import { useState } from 'react';
+import { MAX_NAME_LENGTH, rankingEnabled } from '../../utils/ranking';
 import styles from './PlayerSetup.module.css';
+
+const NAMES_KEY = 'ruleta:playerNames';
+
+/** Nombres usados en la última partida en este dispositivo, para no reescribirlos */
+function loadLastNames(): string[] {
+  try {
+    const raw = localStorage.getItem(NAMES_KEY);
+    const parsed: unknown = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.filter((n): n is string => typeof n === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Quita espacios sobrantes: "  Ana   María " → "Ana María" */
+function cleanName(name: string): string {
+  return name.trim().replace(/\s+/g, ' ');
+}
 
 interface CategoryInfo {
   name: string;
@@ -8,13 +27,15 @@ interface CategoryInfo {
 
 interface PlayerSetupProps {
   availableCategories: CategoryInfo[];
-  onStart: (playerCount: number, rounds: number, wildcardEnabled: boolean, boteRoundEnabled: boolean, selectedCategories: string[]) => void;
+  onStart: (playerNames: string[], rounds: number, wildcardEnabled: boolean, boteRoundEnabled: boolean, selectedCategories: string[]) => void;
   onHowToPlay: () => void;
+  onRanking: () => void;
 }
 
-export function PlayerSetup({ availableCategories, onStart, onHowToPlay }: PlayerSetupProps) {
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+export function PlayerSetup({ availableCategories, onStart, onHowToPlay, onRanking }: PlayerSetupProps) {
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [playerCount, setPlayerCount] = useState<number | null>(null);
+  const [names, setNames] = useState<string[]>(loadLastNames);
   const [selectedCategories, setSelectedCategories] = useState<string[]>(
     () => availableCategories.map((c) => c.name)
   );
@@ -32,6 +53,22 @@ export function PlayerSetup({ availableCategories, onStart, onHowToPlay }: Playe
 
   const maxRounds = Math.min(5, totalAvailable);
 
+  // Nombres de los jugadores de esta partida (obligatorios y sin repetir)
+  const playerNames = Array.from({ length: playerCount ?? 0 }, (_, i) => cleanName(names[i] ?? ''));
+  const isDuplicate = (i: number) =>
+    playerNames[i] !== '' &&
+    playerNames.findIndex((n) => n.toLocaleLowerCase('es') === playerNames[i].toLocaleLowerCase('es')) !== i;
+  const namesValid = playerNames.length > 0 && playerNames.every((n, i) => n !== '' && !isDuplicate(i));
+
+  const setName = (index: number, value: string) => {
+    setNames((prev) => {
+      const next = [...prev];
+      while (next.length <= index) next.push('');
+      next[index] = value.slice(0, MAX_NAME_LENGTH);
+      return next;
+    });
+  };
+
   const toggleCategory = (name: string) => {
     setSelectedCategories((prev) =>
       prev.includes(name) ? prev.filter((c) => c !== name) : [...prev, name]
@@ -46,30 +83,38 @@ export function PlayerSetup({ availableCategories, onStart, onHowToPlay }: Playe
     }
   };
 
-  const handleNextFromStep1 = () => {
+  const handleNextFromCount = () => {
     if (playerCount !== null) {
       if (playerCount < 2) setBoteRoundEnabled(false);
       setStep(2);
     }
   };
 
-  const handleNextFromStep2 = () => {
+  const handleNextFromNames = () => {
+    if (!namesValid) return;
+    try {
+      localStorage.setItem(NAMES_KEY, JSON.stringify(playerNames));
+    } catch { /* ignorar */ }
+    setStep(3);
+  };
+
+  const handleNextFromCategories = () => {
     if (selectedCategories.length === 0) return;
     if (rounds !== null && rounds > maxRounds) {
       setRounds(maxRounds > 0 ? maxRounds : null);
     }
-    setStep(3);
+    setStep(4);
   };
 
   const handleStart = () => {
-    if (playerCount !== null && rounds !== null) {
-      onStart(playerCount, rounds, wildcardEnabled, boteRoundEnabled, selectedCategories);
+    if (namesValid && rounds !== null) {
+      onStart(playerNames, rounds, wildcardEnabled, boteRoundEnabled, selectedCategories);
     }
   };
 
   return (
     <div className={styles.wrapper}>
-      <div className={`${styles.card} ${step === 2 ? styles.cardWide : ''}`}>
+      <div className={`${styles.card} ${step === 3 ? styles.cardWide : ''}`}>
         <div className={styles.title}>La Ruleta de la Fortuna</div>
 
         {step === 1 && (
@@ -94,7 +139,7 @@ export function PlayerSetup({ availableCategories, onStart, onHowToPlay }: Playe
             <button
               className={styles.startButton}
               disabled={playerCount === null}
-              onClick={handleNextFromStep1}
+              onClick={handleNextFromCount}
             >
               Siguiente
             </button>
@@ -102,10 +147,58 @@ export function PlayerSetup({ availableCategories, onStart, onHowToPlay }: Playe
             <button className={styles.howToPlayLink} onClick={onHowToPlay}>
               ¿Cómo se juega?
             </button>
+
+            {rankingEnabled && (
+              <button className={styles.backLink} onClick={onRanking}>
+                🏆 Clasificación
+              </button>
+            )}
           </>
         )}
 
         {step === 2 && (
+          <>
+            <div className={styles.subtitle}>
+              {playerNames.length === 1 ? '¿Cómo te llamas?' : '¿Cómo os llamáis?'}
+            </div>
+
+            <form
+              className={styles.names}
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleNextFromNames();
+              }}
+            >
+              {playerNames.map((_, i) => (
+                <label key={i} className={styles.nameField}>
+                  <span className={styles.nameNumber}>{i + 1}</span>
+                  <input
+                    className={`${styles.nameInput} ${isDuplicate(i) ? styles.nameInvalid : ''}`}
+                    type="text"
+                    value={names[i] ?? ''}
+                    onChange={(e) => setName(i, e.target.value)}
+                    placeholder={`Nombre del jugador ${i + 1}`}
+                    maxLength={MAX_NAME_LENGTH}
+                    autoComplete="off"
+                    autoFocus={i === 0}
+                    aria-invalid={isDuplicate(i)}
+                  />
+                  {isDuplicate(i) && <span className={styles.nameError}>Nombre repetido</span>}
+                </label>
+              ))}
+
+              <button type="submit" className={styles.startButton} disabled={!namesValid}>
+                Siguiente
+              </button>
+            </form>
+
+            <button className={styles.backLink} onClick={() => setStep(1)}>
+              ← Volver
+            </button>
+          </>
+        )}
+
+        {step === 3 && (
           <>
             <div className={styles.subtitle}>¿Qué temas quieres jugar?</div>
 
@@ -135,18 +228,18 @@ export function PlayerSetup({ availableCategories, onStart, onHowToPlay }: Playe
             <button
               className={styles.startButton}
               disabled={selectedCategories.length === 0}
-              onClick={handleNextFromStep2}
+              onClick={handleNextFromCategories}
             >
               Siguiente
             </button>
 
-            <button className={styles.backLink} onClick={() => setStep(1)}>
+            <button className={styles.backLink} onClick={() => setStep(2)}>
               ← Volver
             </button>
           </>
         )}
 
-        {step === 3 && (
+        {step === 4 && (
           <>
             <div className={styles.subtitle}>Configuración de la partida</div>
 
@@ -202,7 +295,7 @@ export function PlayerSetup({ availableCategories, onStart, onHowToPlay }: Playe
               Comenzar partida
             </button>
 
-            <button className={styles.backLink} onClick={() => setStep(2)}>
+            <button className={styles.backLink} onClick={() => setStep(3)}>
               ← Volver
             </button>
           </>

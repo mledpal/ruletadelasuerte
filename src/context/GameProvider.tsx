@@ -1,6 +1,7 @@
 import { useReducer, useEffect, useCallback, type ReactNode } from 'react';
 import type { GameState, GameAction, LetterCell } from '../types/game';
 import { GameContext } from './GameContext';
+import { newGameId } from '../utils/id';
 
 const SAVE_KEY = 'ruleta:state';
 
@@ -12,6 +13,7 @@ function loadSavedState(): GameState | null {
     // Sanear estado transitorio de animación
     return {
       ...saved,
+      gameId: saved.gameId ?? newGameId(), // guardados antiguos no tienen este campo
       isRevealing: false,
       wheelStop: saved.wheelStop ?? null, // guardados antiguos no tienen este campo
       cells: saved.cells.map((c) =>
@@ -33,6 +35,7 @@ function createCellsFromPhrase(phrase: string): LetterCell[] {
 }
 
 const initialState: GameState = {
+  gameId: '',
   phrase: 'LA RULETA DE LA FORTUNA',
   hint: 'Nombre del programa',
   category: 'TELEVISIÓN',
@@ -71,10 +74,11 @@ const initialState: GameState = {
 function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case 'INIT_GAME': {
-      const { playerCount, rounds, wildcardEnabled, boteRoundEnabled, castuloMode } = action.payload;
-      const players = Array.from({ length: playerCount }, (_, i) => ({
+      const { playerNames, rounds, wildcardEnabled, boteRoundEnabled, castuloMode } = action.payload;
+      const playerCount = playerNames.length;
+      const players = playerNames.map((name, i) => ({
         id: i,
-        name: `Jugador ${i + 1}`,
+        name,
         score: 0,
         wallet: 0,
         hasWildcard: false,
@@ -85,6 +89,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       const isBoteActive = boteRoundEnabled && playerCount >= 2;
       return {
         ...initialState,
+        gameId: newGameId(),
         players,
         totalRounds: rounds,
         wildcardEnabled,
@@ -387,6 +392,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
     case 'RESET_GAME':
       return {
         ...initialState,
+        gameId: newGameId(),
         wildcardAvailable: state.wildcardEnabled && state.players.length > 1,
         wildcardEnabled: state.wildcardEnabled,
         totalRounds: state.totalRounds,

@@ -70,6 +70,8 @@ export interface WheelStop {
 }
 
 export interface GameState {
+  /** Identificador único de la partida (evita guardarla dos veces en el ranking) */
+  gameId: string;
   phrase: string;
   hint: string;
   category: string;
@@ -97,7 +99,7 @@ export interface GameState {
 }
 
 export type GameAction =
-  | { type: 'INIT_GAME'; payload: { playerCount: number; rounds: number; wildcardEnabled: boolean; boteRoundEnabled: boolean; castuloMode: boolean } }
+  | { type: 'INIT_GAME'; payload: { playerNames: string[]; rounds: number; wildcardEnabled: boolean; boteRoundEnabled: boolean; castuloMode: boolean } }
   | { type: 'SET_PHRASE'; payload: { phrase: string; hint: string; category: string } }
   | { type: 'UPDATE_CELL'; payload: { id: string; state: CellState } }
   | { type: 'SET_REVEALING'; payload: boolean }
@@ -122,3 +124,14 @@ export type GameAction =
   | { type: 'AWARD_TOKEN'; payload: { playerId: number; token: CastuloToken } }
   | { type: 'USE_ESCIPION'; payload: { sourceId: number; targetId: number } }
   | { type: 'ASEDIO_TRANSFER'; payload: { sourceId: number; targetId: number } };
+
+/** Tabla del ranking global: el modo Cástulo tiene la suya propia */
+export type RankingMode = 'normal' | 'castulo';
+
+export interface RankingEntry {
+  gameId: string;
+  name: string;
+  score: number;
+  rounds: number;
+  createdAt: string;
+}

@@ -1,0 +1,189 @@
+/* ── Pantalla de clasificación ─────────────────────────────── */
+
+.wrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+}
+
+.card {
+  background: var(--color-surface);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--color-gold-dim);
+  box-shadow: var(--shadow-card);
+  border-radius: 28px;
+  padding: 48px 40px;
+  max-width: 620px;
+  width: 100%;
+  text-align: center;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: clamp(2.4rem, 6vw, 3.4rem);
+  letter-spacing: 0.06em;
+  color: var(--color-gold);
+  line-height: 1.1;
+}
+
+.subtitle {
+  font-size: 0.85rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin: 4px 0 24px;
+}
+
+.tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.tab {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 2px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), color var(--transition-fast), background var(--transition-fast);
+}
+
+.tab:hover {
+  border-color: var(--color-gold-dim);
+  color: var(--color-text);
+}
+
+.tabActive {
+  border-color: var(--color-gold);
+  color: var(--color-gold);
+  background: var(--color-surface-hover);
+}
+
+.backLink {
+  margin-top: 16px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.backLink:hover {
+  color: var(--color-gold);
+  background: var(--color-surface-hover);
+}
+
+/* ── Tabla ─────────────────────────────────────────────────── */
+
+.table {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 2.2em minmax(0, 1fr) auto;
+  grid-template-areas:
+    'pos name score'
+    'pos meta score';
+  align-items: center;
+  column-gap: 12px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.pos {
+  grid-area: pos;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.name {
+  grid-area: name;
+  font-weight: 600;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meta {
+  grid-area: meta;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.score {
+  grid-area: score;
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  letter-spacing: 0.03em;
+  color: var(--color-text);
+}
+
+.podium .pos,
+.podium .score {
+  color: var(--color-gold);
+}
+
+.highlight {
+  border-color: var(--color-gold);
+  background: var(--color-gold-dim);
+  box-shadow: var(--shadow-glow-gold);
+}
+
+.empty {
+  padding: 20px 8px;
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+}
+
+.retry {
+  background: transparent;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--color-gold);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+@media (max-width: 600px) {
+  .card {
+    padding: 32px 16px 20px;
+    border-radius: 20px;
+  }
+
+  .row {
+    padding: 6px 10px;
+    column-gap: 8px;
+  }
+
+  .score {
+    font-size: 1.15rem;
+  }
+}

@@ -12,12 +12,13 @@ import type { Phrase } from './types/game';
 import { PlayerSetup } from './components/PlayerSetup/PlayerSetup';
 import { Dialog } from './components/Dialog/Dialog';
 import { HowToPlay } from './components/HowToPlay/HowToPlay';
+import { RankingScreen } from './components/Ranking/Ranking';
 import './App.css';
 
 const VIEW_KEY = 'ruleta:view';
 const USED_KEY = 'ruleta:usedPhrases';
 
-type AppView = 'setup' | 'game' | 'phrases' | 'instructions';
+type AppView = 'setup' | 'game' | 'phrases' | 'instructions' | 'ranking';
 
 function GameApp() {
   const { state, dispatch } = useGame();
@@ -133,14 +134,14 @@ function GameApp() {
     setView('setup');
   }, [dispatch]);
 
-  const handleInitGame = useCallback((playerCount: number, rounds: number, wildcardEnabled: boolean, boteRoundEnabled: boolean, selectedCategories: string[]) => {
+  const handleInitGame = useCallback((playerNames: string[], rounds: number, wildcardEnabled: boolean, boteRoundEnabled: boolean, selectedCategories: string[]) => {
     localStorage.removeItem(VIEW_KEY);
     localStorage.removeItem(USED_KEY);
     usedRef.current = new Set();
     selectedCategoriesRef.current = selectedCategories;
     // El modo Cástulo se activa solo si se elige exclusivamente la categoría CASTULO.
     const castuloMode = selectedCategories.length === 1 && selectedCategories[0] === 'CASTULO';
-    dispatch({ type: 'INIT_GAME', payload: { playerCount, rounds, wildcardEnabled, boteRoundEnabled, castuloMode } });
+    dispatch({ type: 'INIT_GAME', payload: { playerNames, rounds, wildcardEnabled, boteRoundEnabled, castuloMode } });
     pickPhrase(phrases);
     setView('game');
   }, [phrases, dispatch, pickPhrase]);
@@ -175,10 +176,18 @@ function GameApp() {
     );
   }
 
+  if (view === 'ranking') {
+    return (
+      <div className="appSetup">
+        <RankingScreen onBack={() => setView('setup')} />
+      </div>
+    );
+  }
+
   if (view === 'setup') {
     return (
       <div className="appSetup">
-        <PlayerSetup availableCategories={availableCategories} onStart={handleInitGame} onHowToPlay={handleOpenInstructions} />
+        <PlayerSetup availableCategories={availableCategories} onStart={handleInitGame} onHowToPlay={handleOpenInstructions} onRanking={() => setView('ranking')} />
       </div>
     );
   }
@@ -187,6 +196,8 @@ function GameApp() {
     <div className="app" data-castulo={state.castuloMode ? 'true' : undefined}>
       {state.gameComplete && (
         <WinnerModal
+          gameId={state.gameId}
+          totalRounds={state.totalRounds}
           players={state.players}
           boteAmount={state.boteAmount}
           boteWinnerId={state.boteWinnerId ?? null}

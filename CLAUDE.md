@@ -33,10 +33,10 @@ Todos los tipos del juego viven en `src/types/game.ts` (`GameState`, `GameAction
 
 ### Flujo de la app (App.tsx)
 
-`GameApp` gestiona las vistas (`'setup' | 'game' | 'phrases' | 'instructions'`) y la lógica de rondas/frases:
+`GameApp` gestiona las vistas (`'setup' | 'game' | 'phrases' | 'instructions' | 'ranking'`) y la lógica de rondas/frases:
 
 - Al arrancar, si hay partida guardada (`ruleta:view === 'game'`), muestra un diálogo de reanudar/descartar.
-- `PlayerSetup` configura jugadores, rondas, comodín, ronda de bote y **categorías seleccionadas**; lanza `INIT_GAME`.
+- `PlayerSetup` configura jugadores (número y nombres), rondas, comodín, ronda de bote y **categorías seleccionadas**; lanza `INIT_GAME`.
 - La selección de frases (aleatoria, sin repetir dentro de la partida, filtrada por categorías) vive en `App.tsx` con `usedRef` + `selectedCategoriesRef`, **no** en el reducer.
 - Al resolver el panel: `COMPLETE_ROUND` mueve `score → wallet` del ganador; tras 3 s `GameApp` dispara `NEXT_ROUND` + nueva frase, o `COMPLETE_GAME` (→ `WinnerModal`) en la última ronda.
 
@@ -67,6 +67,14 @@ Modo temático especial (historia de la ciudad iberorromana de Cástulo, Linares
 ### Bote (ronda final)
 
 Si `boteRoundEnabled` (requiere ≥2 jugadores), la última ronda acumula un bote (base 1000 €) que se lleva quien la resuelve (`WIN_BOTE`).
+
+### Ranking global (Supabase)
+
+- Top 10 global por modo (`'normal' | 'castulo'`) con la puntuación (`wallet`) del ganador de cada partida. Puesta en marcha y mantenimiento: `supabase/README.md`; esquema: `supabase/ranking.sql`.
+- Cliente REST sin dependencias en `src/utils/ranking.ts`; config por `VITE_SUPABASE_URL` / `VITE_SUPABASE_KEY` en `.env` (ver `.env.example`). Sin ellas, `rankingEnabled = false` y el ranking se oculta.
+- La tabla es de solo lectura pública; la única escritura es la RPC `submit_score`, que valida, decide si entra en el top y poda el resto.
+- `state.gameId` (UUID, nuevo en cada `INIT_GAME`/`RESET_GAME`) hace el envío idempotente. `useSubmitWinner` (en `src/hooks/useRanking.ts`) se ejecuta desde `WinnerModal`.
+- Los nombres de jugador son obligatorios y únicos (paso 2 de `PlayerSetup`, máx. `MAX_NAME_LENGTH`) y se recuerdan en `ruleta:playerNames`.
 
 ### Distinciones clave de estado
 
