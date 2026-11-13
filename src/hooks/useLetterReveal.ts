@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { useGame } from '../context/GameContext';
 import { playDing, playError } from '../utils/audio';
 import type { RevealResult } from '../types/game';
+import { baseLetter } from '../utils/letters';
 
 export function useLetterReveal() {
   const { state, dispatch } = useGame();
@@ -10,9 +11,9 @@ export function useLetterReveal() {
 
   const revealLetter = useCallback(
     async (letter: string): Promise<RevealResult> => {
-      const upperLetter = letter.toUpperCase();
+      const upperLetter = baseLetter(letter);
       const matches = state.cells.filter(
-        (cell) => cell.letter === upperLetter && cell.state === 'hidden'
+        (cell) => cell.letter !== null && baseLetter(cell.letter) === upperLetter && cell.state === 'hidden'
       );
 
       if (matches.length === 0) {

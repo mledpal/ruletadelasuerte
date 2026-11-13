@@ -7,6 +7,7 @@ import { Wheel } from '../Wheel/Wheel';
 import { TargetPicker } from '../TargetPicker/TargetPicker';
 import type { WheelResult, LetterCell, SpecialWheelResult } from '../../types/game';
 import { formatMoney, currencyUnit } from '../../utils/currency';
+import { baseLetter, normalizeText } from '../../utils/letters';
 import styles from './GameControls.module.css';
 
 const VOWELS = ['A', 'E', 'I', 'O', 'U'];
@@ -22,7 +23,7 @@ interface UsedLettersProps {
 
 function UsedLetters({ guessed, cells }: UsedLettersProps) {
   const foundSet = new Set(
-    cells.filter((c) => c.letter && c.state !== 'hidden').map((c) => c.letter as string)
+    cells.filter((c) => c.letter && c.state !== 'hidden').map((c) => baseLetter(c.letter as string))
   );
 
   const renderChip = (letter: string) => {
@@ -81,7 +82,7 @@ export function GameControls() {
   const currentPlayer = state.players[state.currentPlayer];
   const canBuyVowel = currentPlayer.score >= VOWEL_COST;
   const hasHiddenConsonants = state.cells.some(
-    (cell) => cell.state === 'hidden' && cell.letter !== null && !VOWELS.includes(cell.letter ?? '')
+    (cell) => cell.state === 'hidden' && cell.letter !== null && !VOWELS.includes(baseLetter(cell.letter))
   );
   const canSpin = state.turnPhase === 'spin' || state.turnPhase === 'next-action';
   const allVowelsGuessed = VOWELS.every((v) => state.guessedLetters.includes(v));
@@ -148,7 +149,7 @@ export function GameControls() {
     const letterToGuess = (directLetter || letter || '').trim();
     if (!letterToGuess || isRevealing) return;
 
-    const upperLetter = letterToGuess.toUpperCase();
+    const upperLetter = baseLetter(letterToGuess);
     setLetter('');
 
     if (VOWELS.includes(upperLetter)) {
@@ -334,7 +335,7 @@ export function GameControls() {
   const handleSolve = async () => {
     if (!solvePhrase || isRevealing) return;
 
-    if (solvePhrase.toUpperCase() === state.phrase.toUpperCase()) {
+    if (normalizeText(solvePhrase) === normalizeText(state.phrase)) {
       playSuccess();
       dispatch({ type: 'SET_REVEALING', payload: true });
       await revealAll();
@@ -528,7 +529,7 @@ export function GameControls() {
             />
             <button
               onClick={() => handleGuessLetter()}
-              className={`${styles.button} ${VOWELS.includes(letter.toUpperCase()) && letter ? styles.vowelButton : styles.consonantButton}`}
+              className={`${styles.button} ${letter && VOWELS.includes(baseLetter(letter)) ? styles.vowelButton : styles.consonantButton}`}
               disabled={isRevealing || !letter}
             >
               Probar Letra
