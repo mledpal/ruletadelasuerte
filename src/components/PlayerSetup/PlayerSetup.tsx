@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { MAX_NAME_LENGTH, rankingEnabled } from '../../utils/ranking';
+import { CONSONANT_TIME_OPTIONS, loadConsonantTime, saveConsonantTime } from '../../utils/consonantTimer';
 import styles from './PlayerSetup.module.css';
 
 const NAMES_KEY = 'ruleta:playerNames';
@@ -27,7 +28,7 @@ interface CategoryInfo {
 
 interface PlayerSetupProps {
   availableCategories: CategoryInfo[];
-  onStart: (playerNames: string[], rounds: number, wildcardEnabled: boolean, boteRoundEnabled: boolean, selectedCategories: string[]) => void;
+  onStart: (playerNames: string[], rounds: number, wildcardEnabled: boolean, boteRoundEnabled: boolean, selectedCategories: string[], consonantTimeLimit: number) => void;
   onHowToPlay: () => void;
   onRanking: () => void;
 }
@@ -42,6 +43,7 @@ export function PlayerSetup({ availableCategories, onStart, onHowToPlay, onRanki
   const [rounds, setRounds] = useState<number | null>(null);
   const [wildcardEnabled, setWildcardEnabled] = useState(true);
   const [boteRoundEnabled, setBoteRoundEnabled] = useState(false);
+  const [consonantTime, setConsonantTime] = useState(loadConsonantTime);
 
   const allSelected =
     availableCategories.length > 0 &&
@@ -108,7 +110,8 @@ export function PlayerSetup({ availableCategories, onStart, onHowToPlay, onRanki
 
   const handleStart = () => {
     if (namesValid && rounds !== null) {
-      onStart(playerNames, rounds, wildcardEnabled, boteRoundEnabled, selectedCategories);
+      saveConsonantTime(consonantTime);
+      onStart(playerNames, rounds, wildcardEnabled, boteRoundEnabled, selectedCategories, consonantTime);
     }
   };
 
@@ -259,6 +262,19 @@ export function PlayerSetup({ availableCategories, onStart, onHowToPlay, onRanki
 
             <div className={styles.phrasesNote}>
               {totalAvailable} frase{totalAvailable !== 1 ? 's' : ''} disponible{totalAvailable !== 1 ? 's' : ''} con los temas elegidos
+            </div>
+
+            <div className={styles.sectionLabel}>⏱️ Tiempo para pulsar la consonante</div>
+            <div className={styles.timeOptions}>
+              {CONSONANT_TIME_OPTIONS.map((s) => (
+                <button
+                  key={s}
+                  className={`${styles.timeOption} ${consonantTime === s ? styles.timeActive : ''}`}
+                  onClick={() => setConsonantTime(s)}
+                >
+                  {s === 0 ? 'Sin límite' : `${s} s`}
+                </button>
+              ))}
             </div>
 
             <div className={styles.checkboxWrapper}>

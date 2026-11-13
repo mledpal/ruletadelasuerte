@@ -134,14 +134,14 @@ function GameApp() {
     setView('setup');
   }, [dispatch]);
 
-  const handleInitGame = useCallback((playerNames: string[], rounds: number, wildcardEnabled: boolean, boteRoundEnabled: boolean, selectedCategories: string[]) => {
+  const handleInitGame = useCallback((playerNames: string[], rounds: number, wildcardEnabled: boolean, boteRoundEnabled: boolean, selectedCategories: string[], consonantTimeLimit: number) => {
     localStorage.removeItem(VIEW_KEY);
     localStorage.removeItem(USED_KEY);
     usedRef.current = new Set();
     selectedCategoriesRef.current = selectedCategories;
     // El modo Cástulo se activa solo si se elige exclusivamente la categoría CASTULO.
     const castuloMode = selectedCategories.length === 1 && selectedCategories[0] === 'CASTULO';
-    dispatch({ type: 'INIT_GAME', payload: { playerNames, rounds, wildcardEnabled, boteRoundEnabled, castuloMode } });
+    dispatch({ type: 'INIT_GAME', payload: { playerNames, rounds, wildcardEnabled, boteRoundEnabled, castuloMode, consonantTimeLimit } });
     pickPhrase(phrases);
     setView('game');
   }, [phrases, dispatch, pickPhrase]);

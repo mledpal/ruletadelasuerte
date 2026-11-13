@@ -24,7 +24,7 @@ yarn deploy        # Build + scp a ruleta.ledemar.es (servidor personal)
 ### Estado global: Context + useReducer
 
 - `src/context/GameContext.ts` — contexto + hook `useGame()` (lanza error fuera del provider).
-- `src/context/GameProvider.tsx` — `gameReducer` (25 tipos de acción) + estado inicial. **Único lugar donde se modifica el estado**, siempre de forma inmutable (spread).
+- `src/context/GameProvider.tsx` — `gameReducer` (27 tipos de acción) + estado inicial. **Único lugar donde se modifica el estado**, siempre de forma inmutable (spread).
 - El estado completo se **persiste en localStorage** en cada cambio (`SAVE_KEY` en GameProvider) para poder reanudar la partida tras recargar. `RESET_GAME` limpia el guardado. Al añadir campos a `GameState`, ten en cuenta que un guardado antiguo puede no tenerlos.
 
 ### Tipos: fuente única de verdad
@@ -46,7 +46,7 @@ Todos los tipos del juego viven en `src/types/game.ts` (`GameState`, `GameAction
 ```
 'spin' → (gira ruleta) → 'consonant' → (acierta) → 'vowels' → 'next-action'
 ```
-La fase `'vowels'` se salta si no quedan vocales ocultas. `state.isRevealing` es el lock de animación que deshabilita botones durante el revelado de letras.
+La fase `'vowels'` se salta si no quedan vocales ocultas. En `'consonant'` corre una cuenta atrás (`ConsonantTimer`, `state.config.consonantTimeLimit`, 30 s por defecto, 0 = sin límite, elegible en el setup); si se agota, el jugador pierde el turno. `state.isRevealing` es el lock de animación que deshabilita botones durante el revelado de letras.
 
 ### Frases: hook usePhrases
 

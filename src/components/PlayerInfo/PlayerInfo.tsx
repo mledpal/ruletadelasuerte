@@ -52,6 +52,7 @@ export function PlayerInfo() {
               </div>
               <div className={styles.tokens}>
                 {player.hasWildcard && <span className={styles.wildcard}>★ Comodín</span>}
+                {player.hasAllVowels && <span className={styles.tokenVowels}>🔤 Todas las vocales</span>}
                 {player.hasAnibal && <span className={styles.token}>Aníbal</span>}
                 {player.hasHimilce && <span className={styles.token}>Himilce</span>}
                 {player.hasEscipion && <span className={styles.tokenEscipion}>⚔️ Escipión</span>}

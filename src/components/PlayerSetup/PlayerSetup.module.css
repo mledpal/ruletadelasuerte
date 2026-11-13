@@ -375,6 +375,40 @@
   background: rgba(255, 215, 0, 0.15);
 }
 
+/* ── Tiempo para la consonante (step 4) ────────────────────── */
+
+.timeOptions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.timeOption {
+  padding: 8px 14px;
+  border-radius: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--color-text-muted);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast), color var(--transition-fast);
+}
+
+.timeOption:hover {
+  border-color: var(--color-gold-dim);
+  background: rgba(255, 215, 0, 0.06);
+}
+
+.timeOption.timeActive {
+  border-color: var(--color-gold);
+  background: rgba(255, 215, 0, 0.12);
+  color: var(--color-gold);
+}
+
 /* ── Nota de frases disponibles (step 4) ───────────────────── */
 
 .phrasesNote {

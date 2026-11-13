@@ -454,6 +454,22 @@
   box-shadow: 0 4px 24px rgba(183, 28, 28, 0.4) !important;
 }
 
+/* Gajo «Todas las vocales» guardado en el atril */
+.allVowelsButton {
+  width: 100%;
+  padding: 14px;
+  font-size: 1.2rem !important;
+  letter-spacing: 0.06em;
+  background: var(--color-teal) !important;
+  color: var(--color-text) !important;
+  border-color: var(--color-border) !important;
+}
+
+.allVowelsButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 /* Entrada manual: innecesaria en pantallas táctiles (ya está el teclado virtual) */
 @media (pointer: coarse) {
   .manualInput {
@@ -504,7 +520,8 @@
     transform: none !important;
   }
 
-  .escipionButton {
+  .escipionButton,
+  .allVowelsButton {
     padding: 12px !important;
     font-size: 1.15rem !important;
   }

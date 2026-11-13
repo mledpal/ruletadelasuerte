@@ -7,7 +7,11 @@ import type { RankingEntry, RankingMode } from '../types/game';
 export const RANKING_SIZE = 10;
 export const MAX_NAME_LENGTH = 20;
 
-const URL = (import.meta.env.VITE_SUPABASE_URL as string | undefined)?.replace(/\/+$/, '');
+// Se admite tanto la Project URL como la URL de la API (acabada en /rest/v1/)
+const URL = (import.meta.env.VITE_SUPABASE_URL as string | undefined)
+  ?.trim()
+  .replace(/\/+$/, '')
+  .replace(/\/rest\/v1$/, '');
 const KEY = import.meta.env.VITE_SUPABASE_KEY as string | undefined;
 const TIMEOUT_MS = 8000;
 

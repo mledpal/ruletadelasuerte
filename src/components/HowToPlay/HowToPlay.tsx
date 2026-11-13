@@ -91,6 +91,15 @@ export function HowToPlay({ onBack }: HowToPlayProps) {
                 de letra. Es de un solo uso y una vez agotado la casilla muestra 400.
               </span>
             </div>
+            <div className={styles.wheelRow}>
+              <span className={`${styles.wheelBadge} ${styles.vocales}`}>TODAS LAS VOCALES</span>
+              <span>
+                Si aciertas la consonante tras caer aquí, el gajo pasa a tu atril. Úsalo en
+                cualquier turno en que puedas comprar vocales: descubre gratis todas las vocales
+                del panel. Mientras alguien lo tenga, la casilla muestra 50; al usarlo vuelve a
+                la ruleta. Un <em>Asedio</em> lo entrega junto con tu botín y <em>Escipión</em> te lo arrebata.
+              </span>
+            </div>
           </div>
         </section>
 
@@ -108,6 +117,8 @@ export function HowToPlay({ onBack }: HowToPlayProps) {
               <strong>Decir una consonante</strong> — escríbela en el campo de texto. Si
               aparece en la frase, ganas el valor de la casilla multiplicado por el número
               de veces que aparece. Si no está, el turno pasa al siguiente jugador.
+              Hay un <strong>tiempo límite</strong> para elegirla (30 segundos por defecto,
+              configurable al crear la partida): si se agota, pierdes el turno.
             </li>
             <li>
               <strong>Comprar una vocal</strong> (opcional) — cuesta <strong>50</strong> de

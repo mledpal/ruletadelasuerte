@@ -61,6 +61,11 @@ function buildSegments(state: GameState): WheelSegment[] {
     ? { value: 'COMODIN', color: '#f59e0b', label: 'COMODÍN', textColor: '#1a0e00', isSpecial: true }
     : { value: 400,       color: '#ffd700', label: money(400), textColor: '#1a0e00' };
 
+  // Mientras ningún jugador lo tenga en su atril, ocupa el lugar de un 50
+  const vocalesSlot: WheelSegment = state.players.some((p) => p.hasAllVowels)
+    ? { value: 50,              color: '#eab308', label: money(50),         textColor: '#1a0e00' }
+    : { value: 'TODAS_VOCALES', color: '#22d3ee', label: 'TODAS\nVOCALES', textColor: '#0f172a', isSpecial: true };
+
   const boteLabel = `¡BOTE!\n${state.boteAmount.toLocaleString('es-ES')}`;
   const boteSlot: WheelSegment = isBoteRound
     ? { value: 'BOTE', color: '#ec4899', label: boteLabel,  textColor: '#ffffff', isSpecial: true }
@@ -72,7 +77,7 @@ function buildSegments(state: GameState): WheelSegment[] {
     { value: 200,            color: '#9333ea', label: money(200),      textColor: '#ffffff' }, //  2
     { value: 75,             color: '#059669', label: money(75),       textColor: '#ffffff' }, //  3
     { value: 300,            color: '#dc2626', label: money(300),      textColor: '#ffffff' }, //  4
-    { value: 50,             color: '#eab308', label: money(50),       textColor: '#1a0e00' }, //  5
+    vocalesSlot,                                                                               //  5
     { value: 150,            color: '#2563eb', label: money(150),      textColor: '#ffffff' }, //  6
     { value: 'PIERDE_TURNO', color: '#475569', label: 'PIERDE\nTURNO', textColor: '#ffffff', isSpecial: true }, //  7
     { value: 25,             color: '#65a30d', label: money(25),       textColor: '#ffffff' }, //  8
@@ -283,30 +288,47 @@ export function Wheel({ onResult, onClose }: WheelProps) {
     const camera = new THREE.PerspectiveCamera(36, width / height, 0.1, 100);
     /*
      * Encuadre según la proporción del contenedor:
-     * - Cuadrado (escritorio): la ruleta completa.
-     * - Apaisado (móvil, lo fija el CSS): zoom sobre el arco superior, de modo
-     *   que se ven a gran tamaño la casilla bajo la lengüeta y sus vecinas.
+     * - Cuadrado (escritorio): la ruleta completa mientras se carga y, al
+     *   lanzarla, la cámara se acerca al arco superior (zoom animado).
+     * - Apaisado (móvil, lo fija el CSS): zoom fijo sobre el arco superior, de
+     *   modo que se ven a gran tamaño la casilla bajo la lengüeta y sus vecinas.
      */
+    const fullPos = new THREE.Vector3();
+    const fullLook = new THREE.Vector3();
+    const zoomPos = new THREE.Vector3();
+    const zoomLook = new THREE.Vector3();
+    const camLook = new THREE.Vector3();
+    let alwaysZoom = false;
+    let zoomAmount = 0; // 0 = ruleta completa, 1 = zoom sobre la lengüeta
+
+    const applyCamera = () => {
+      const k = alwaysZoom ? 1 : zoomAmount * zoomAmount * (3 - 2 * zoomAmount);
+      camera.position.lerpVectors(fullPos, zoomPos, k);
+      camLook.lerpVectors(fullLook, zoomLook, k);
+      camera.lookAt(camLook);
+    };
+
     const frameCamera = (aspect: number) => {
       camera.aspect = aspect;
       const vHalf = THREE.MathUtils.degToRad(camera.fov / 2);
       const hHalf = Math.atan(Math.tan(vHalf) * aspect);
-      if (aspect > ZOOM_MIN_ASPECT) {
-        const target = new THREE.Vector3(0, ZOOM_CENTER_Y, 0);
-        const dist = Math.max(
-          ZOOM_HALF_WIDTH / Math.tan(hHalf),
-          ZOOM_HALF_HEIGHT / Math.tan(vHalf),
-        );
-        const tilt = THREE.MathUtils.degToRad(14);
-        camera.position.set(0, target.y - Math.sin(tilt) * dist, Math.cos(tilt) * dist);
-        camera.lookAt(target);
-      } else {
-        const fitRadius = 2.62;
-        const dist = fitRadius / Math.sin(Math.min(vHalf, hHalf));
-        const tilt = THREE.MathUtils.degToRad(24);
-        camera.position.set(0, -Math.sin(tilt) * dist, Math.cos(tilt) * dist);
-        camera.lookAt(0, 0.02, 0);
-      }
+      alwaysZoom = aspect > ZOOM_MIN_ASPECT;
+
+      zoomLook.set(0, ZOOM_CENTER_Y, 0);
+      const zoomDist = Math.max(
+        ZOOM_HALF_WIDTH / Math.tan(hHalf),
+        ZOOM_HALF_HEIGHT / Math.tan(vHalf),
+      );
+      const zoomTilt = THREE.MathUtils.degToRad(14);
+      zoomPos.set(0, zoomLook.y - Math.sin(zoomTilt) * zoomDist, Math.cos(zoomTilt) * zoomDist);
+
+      const fitRadius = 2.62;
+      const fullDist = fitRadius / Math.sin(Math.min(vHalf, hHalf));
+      const fullTilt = THREE.MathUtils.degToRad(24);
+      fullLook.set(0, 0.02, 0);
+      fullPos.set(0, -Math.sin(fullTilt) * fullDist, Math.cos(fullTilt) * fullDist);
+
+      applyCamera();
       camera.updateProjectionMatrix();
     };
     frameCamera(width / height);
@@ -645,6 +667,18 @@ export function Wheel({ onResult, onClose }: WheelProps) {
       wobble *= Math.exp(-dt * 10);
       wheelGroup.rotation.x = Math.sin(t * 70) * wobble * 0.0025;
 
+      // Zoom de escritorio: se acerca a la lengüeta en cuanto se lanza
+      if (!alwaysZoom) {
+        const zoomGoal = currentPhase === 'spinning' || currentPhase === 'done' ? 1 : 0;
+        if (zoomAmount !== zoomGoal) {
+          const step = dt / 0.9; // ~0,9 s de transición
+          zoomAmount = zoomGoal > zoomAmount
+            ? Math.min(zoomGoal, zoomAmount + step)
+            : Math.max(zoomGoal, zoomAmount - step);
+          applyCamera();
+        }
+      }
+
       // Desenfoque de movimiento según velocidad
       blurMat.opacity = THREE.MathUtils.clamp((omega - 80) / 260, 0, 0.92);
 
@@ -721,7 +755,7 @@ export function Wheel({ onResult, onClose }: WheelProps) {
         playBankruptSound();
       } else if (selected.value === 'PIERDE_TURNO' || selected.value === 'ASEDIO') {
         playError();
-      } else if (selected.value === 'COMODIN' || selected.value === 'BOTE') {
+      } else if (selected.value === 'COMODIN' || selected.value === 'TODAS_VOCALES' || selected.value === 'BOTE') {
         playJackpotSound();
       } else {
         playDing();
@@ -826,6 +860,7 @@ export function Wheel({ onResult, onClose }: WheelProps) {
     if (lastResult === 'QUIEBRA')      return '¡QUIEBRA!';
     if (lastResult === 'PIERDE_TURNO') return '¡PIERDE TURNO!';
     if (lastResult === 'COMODIN')      return '¡COMODÍN!';
+    if (lastResult === 'TODAS_VOCALES') return '¡TODAS LAS VOCALES!';
     if (lastResult === 'BOTE')         return '¡BOTE!';
     if (lastResult === 'ANIBAL')       return '¡ANÍBAL!';
     if (lastResult === 'HIMILCE')      return '¡HIMILCE!';
@@ -837,7 +872,7 @@ export function Wheel({ onResult, onClose }: WheelProps) {
   const getResultClass = () => {
     if (!lastResult) return '';
     if (lastResult === 'QUIEBRA' || lastResult === 'PIERDE_TURNO' || lastResult === 'ASEDIO') return styles.negativeResult;
-    if (lastResult === 'COMODIN' || lastResult === 'ANIBAL' || lastResult === 'HIMILCE' || lastResult === 'ESCIPION') return styles.wildcardResult;
+    if (lastResult === 'COMODIN' || lastResult === 'TODAS_VOCALES' || lastResult === 'ANIBAL' || lastResult === 'HIMILCE' || lastResult === 'ESCIPION') return styles.wildcardResult;
     if (lastResult === 'BOTE')    return styles.boteResult;
     return styles.positiveResult;
   };
@@ -853,7 +888,10 @@ export function Wheel({ onResult, onClose }: WheelProps) {
         </div>
 
         <div className={`${styles.wheelWrapper} ${castulo ? styles.wheelWrapperCastulo : ''}`}>
-          <div ref={mountRef} className={styles.threeCanvasContainer} />
+          <div
+            ref={mountRef}
+            className={`${styles.threeCanvasContainer} ${phase === 'spinning' || phase === 'done' ? styles.zoomed : ''}`}
+          />
         </div>
 
         <div className={styles.resultArea}>

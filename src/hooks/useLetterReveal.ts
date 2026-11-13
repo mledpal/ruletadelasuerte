@@ -4,6 +4,8 @@ import { playDing, playError } from '../utils/audio';
 import type { RevealResult } from '../types/game';
 import { baseLetter } from '../utils/letters';
 
+const VOWELS = ['A', 'E', 'I', 'O', 'U'];
+
 export function useLetterReveal() {
   const { state, dispatch } = useGame();
 
@@ -37,6 +39,31 @@ export function useLetterReveal() {
     [state.cells, state.config.letterRevealDelay, dispatch]
   );
 
+  /** Descubre de una vez todas las vocales ocultas (gajo «Todas las vocales») */
+  const revealVowels = useCallback(async (): Promise<RevealResult> => {
+    const matches = state.cells.filter(
+      (cell) => cell.letter !== null && VOWELS.includes(baseLetter(cell.letter)) && cell.state === 'hidden'
+    );
+
+    if (matches.length === 0) {
+      playError();
+      return { success: false, count: 0 };
+    }
+
+    dispatch({ type: 'SET_REVEALING', payload: true });
+
+    for (const match of matches) {
+      dispatch({ type: 'UPDATE_CELL', payload: { id: match.id, state: 'revealing' } });
+      playDing();
+      await delay(state.config.letterRevealDelay);
+      dispatch({ type: 'UPDATE_CELL', payload: { id: match.id, state: 'visible' } });
+    }
+
+    dispatch({ type: 'SET_REVEALING', payload: false });
+
+    return { success: true, count: matches.length };
+  }, [state.cells, state.config.letterRevealDelay, dispatch]);
+
   const revealAll = useCallback(async (): Promise<void> => {
     dispatch({ type: 'SET_REVEALING', payload: true });
 
@@ -54,6 +81,7 @@ export function useLetterReveal() {
 
   return {
     revealLetter,
+    revealVowels,
     revealAll,
     isRevealing: state.isRevealing,
   };

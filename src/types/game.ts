@@ -12,6 +12,7 @@ export type WheelResult =
   | 'QUIEBRA'
   | 'PIERDE_TURNO'
   | 'COMODIN'
+  | 'TODAS_VOCALES'
   | 'BOTE'
   | 'ANIBAL'
   | 'HIMILCE'
@@ -22,6 +23,7 @@ export type SpecialWheelResult =
   | 'QUIEBRA'
   | 'PIERDE_TURNO'
   | 'COMODIN'
+  | 'TODAS_VOCALES'
   | 'BOTE'
   | 'ANIBAL'
   | 'HIMILCE'
@@ -45,6 +47,8 @@ export interface Player {
   score: number;
   wallet: number;
   hasWildcard: boolean;
+  /** Gajo «Todas las vocales» guardado en el atril: descubre todas las vocales al usarlo */
+  hasAllVowels: boolean;
   hasAnibal: boolean;
   hasHimilce: boolean;
   hasEscipion: boolean;
@@ -60,6 +64,8 @@ export interface GameConfig {
   turnChangeDelay: number;
   victoryRevealDelay: number;
   totalRounds: number;
+  /** Segundos para pulsar la consonante tras girar la ruleta (0 = sin límite) */
+  consonantTimeLimit: number;
 }
 
 /** Posición en la que se detuvo la ruleta, para que el siguiente giro parta de ahí */
@@ -99,7 +105,7 @@ export interface GameState {
 }
 
 export type GameAction =
-  | { type: 'INIT_GAME'; payload: { playerNames: string[]; rounds: number; wildcardEnabled: boolean; boteRoundEnabled: boolean; castuloMode: boolean } }
+  | { type: 'INIT_GAME'; payload: { playerNames: string[]; rounds: number; wildcardEnabled: boolean; boteRoundEnabled: boolean; castuloMode: boolean; consonantTimeLimit: number } }
   | { type: 'SET_PHRASE'; payload: { phrase: string; hint: string; category: string } }
   | { type: 'UPDATE_CELL'; payload: { id: string; state: CellState } }
   | { type: 'SET_REVEALING'; payload: boolean }
@@ -113,6 +119,8 @@ export type GameAction =
   | { type: 'NEXT_TURN' }
   | { type: 'USE_WILDCARD'; payload: number }
   | { type: 'AWARD_WILDCARD'; payload: number }
+  | { type: 'AWARD_ALL_VOWELS'; payload: number }
+  | { type: 'USE_ALL_VOWELS'; payload: number }
   | { type: 'COMPLETE_ROUND'; payload: number }
   | { type: 'NEXT_ROUND' }
   | { type: 'COMPLETE_GAME' }

@@ -2,6 +2,7 @@ import { useReducer, useEffect, useCallback, type ReactNode } from 'react';
 import type { GameState, GameAction, LetterCell } from '../types/game';
 import { GameContext } from './GameContext';
 import { newGameId } from '../utils/id';
+import { DEFAULT_CONSONANT_TIME } from '../utils/consonantTimer';
 
 const SAVE_KEY = 'ruleta:state';
 
@@ -15,7 +16,10 @@ function loadSavedState(): GameState | null {
       ...saved,
       gameId: saved.gameId ?? newGameId(), // guardados antiguos no tienen este campo
       isRevealing: false,
+      // guardados antiguos no tienen límite de tiempo configurado
+      config: { ...saved.config, consonantTimeLimit: saved.config?.consonantTimeLimit ?? DEFAULT_CONSONANT_TIME },
       wheelStop: saved.wheelStop ?? null, // guardados antiguos no tienen este campo
+      players: saved.players.map((p) => ({ ...p, hasAllVowels: p.hasAllVowels ?? false })),
       cells: saved.cells.map((c) =>
         c.state === 'revealing' ? { ...c, state: 'visible' } : c
       ),
@@ -42,9 +46,9 @@ const initialState: GameState = {
   cells: createCellsFromPhrase('LA RULETA DE LA FORTUNA'),
   currentPlayer: 0,
   players: [
-    { id: 0, name: 'Jugador 1', score: 0, wallet: 0, hasWildcard: false, hasAnibal: false, hasHimilce: false, hasEscipion: false },
-    { id: 1, name: 'Jugador 2', score: 0, wallet: 0, hasWildcard: false, hasAnibal: false, hasHimilce: false, hasEscipion: false },
-    { id: 2, name: 'Jugador 3', score: 0, wallet: 0, hasWildcard: false, hasAnibal: false, hasHimilce: false, hasEscipion: false },
+    { id: 0, name: 'Jugador 1', score: 0, wallet: 0, hasWildcard: false, hasAllVowels: false, hasAnibal: false, hasHimilce: false, hasEscipion: false },
+    { id: 1, name: 'Jugador 2', score: 0, wallet: 0, hasWildcard: false, hasAllVowels: false, hasAnibal: false, hasHimilce: false, hasEscipion: false },
+    { id: 2, name: 'Jugador 3', score: 0, wallet: 0, hasWildcard: false, hasAllVowels: false, hasAnibal: false, hasHimilce: false, hasEscipion: false },
   ],
   wheelValue: 0,
   lastWheelResult: null,
@@ -68,13 +72,14 @@ const initialState: GameState = {
     turnChangeDelay: 1000,
     victoryRevealDelay: 250,
     totalRounds: 3,
+    consonantTimeLimit: DEFAULT_CONSONANT_TIME,
   },
 };
 
 function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case 'INIT_GAME': {
-      const { playerNames, rounds, wildcardEnabled, boteRoundEnabled, castuloMode } = action.payload;
+      const { playerNames, rounds, wildcardEnabled, boteRoundEnabled, castuloMode, consonantTimeLimit } = action.payload;
       const playerCount = playerNames.length;
       const players = playerNames.map((name, i) => ({
         id: i,
@@ -82,6 +87,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         score: 0,
         wallet: 0,
         hasWildcard: false,
+        hasAllVowels: false,
         hasAnibal: false,
         hasHimilce: false,
         hasEscipion: false,
@@ -98,7 +104,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         boteAmount: isBoteActive && rounds === 1 ? 1000 : 0,
         boteWinnerId: null,
         castuloMode,
-        config: { ...initialState.config, totalRounds: rounds },
+        config: { ...initialState.config, totalRounds: rounds, consonantTimeLimit },
       };
     }
 
@@ -228,6 +234,27 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         wildcardAvailable: false,
       };
 
+    case 'AWARD_ALL_VOWELS':
+      return {
+        ...state,
+        players: state.players.map((player) =>
+          player.id === action.payload ? { ...player, hasAllVowels: true } : player
+        ),
+      };
+
+    case 'USE_ALL_VOWELS':
+      // Consume el gajo y da por pedidas todas las vocales (el gajo vuelve a la ruleta)
+      return {
+        ...state,
+        players: state.players.map((player) =>
+          player.id === action.payload ? { ...player, hasAllVowels: false } : player
+        ),
+        guessedLetters: [
+          ...state.guessedLetters,
+          ...['A', 'E', 'I', 'O', 'U'].filter((v) => !state.guessedLetters.includes(v)),
+        ],
+      };
+
     case 'AWARD_TOKEN': {
       const { playerId, token } = action.payload;
       const flag =
@@ -250,6 +277,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
               ...player,
               score: 0,
               hasWildcard: false,
+              hasAllVowels: false,
               hasAnibal: false,
               hasHimilce: false,
               hasEscipion: false,
@@ -276,6 +304,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
               ...player,
               score: player.score + source.score,
               hasWildcard: player.hasWildcard || source.hasWildcard,
+              hasAllVowels: player.hasAllVowels || source.hasAllVowels,
               hasAnibal: player.hasAnibal || source.hasAnibal,
               hasHimilce: player.hasHimilce || source.hasHimilce,
               hasEscipion: player.hasEscipion || source.hasEscipion,
@@ -286,6 +315,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
               ...player,
               score: 0,
               hasWildcard: false,
+              hasAllVowels: false,
               hasAnibal: false,
               hasHimilce: false,
               hasEscipion: false,
@@ -400,12 +430,13 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         boteAmount: 0,
         boteWinnerId: null,
         castuloMode: state.castuloMode,
-        config: { ...initialState.config, totalRounds: state.totalRounds },
+        config: { ...initialState.config, totalRounds: state.totalRounds, consonantTimeLimit: state.config.consonantTimeLimit },
         players: state.players.map((p) => ({
           ...p,
           score: 0,
           wallet: 0,
           hasWildcard: false,
+          hasAllVowels: false,
           hasAnibal: false,
           hasHimilce: false,
           hasEscipion: false,

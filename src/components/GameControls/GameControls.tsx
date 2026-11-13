@@ -5,6 +5,7 @@ import { playSuccess, playTransition, playError } from '../../utils/audio';
 import { Dialog } from '../Dialog/Dialog';
 import { Wheel } from '../Wheel/Wheel';
 import { TargetPicker } from '../TargetPicker/TargetPicker';
+import { ConsonantTimer } from '../ConsonantTimer/ConsonantTimer';
 import type { WheelResult, LetterCell, SpecialWheelResult } from '../../types/game';
 import { formatMoney, currencyUnit } from '../../utils/currency';
 import { baseLetter, normalizeText } from '../../utils/letters';
@@ -65,7 +66,7 @@ type DialogType = 'letter-fail' | 'wheel-special' | 'no-money-vowel' | 'bote-fai
 
 export function GameControls() {
   const { state, dispatch } = useGame();
-  const { revealLetter, revealAll, isRevealing } = useLetterReveal();
+  const { revealLetter, revealVowels, revealAll, isRevealing } = useLetterReveal();
   const [letter, setLetter] = useState('');
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' | 'info' } | null>(null);
   const [dialogType, setDialogType] = useState<DialogType>(null);
@@ -76,6 +77,8 @@ export function GameControls() {
   const [targetMode, setTargetMode] = useState<'asedio' | 'escipion' | null>(null);
 
   const [showWheelModal, setShowWheelModal] = useState(false);
+  // Hay un cambio de turno en marcha (evita que el temporizador se reactive durante la espera)
+  const [changingTurn, setChangingTurn] = useState(false);
 
   const castulo = state.castuloMode;
   const unit = currencyUnit(castulo);
@@ -86,15 +89,38 @@ export function GameControls() {
   );
   const canSpin = state.turnPhase === 'spin' || state.turnPhase === 'next-action';
   const allVowelsGuessed = VOWELS.every((v) => state.guessedLetters.includes(v));
+  const hasHiddenVowels = state.cells.some(
+    (cell) => cell.state === 'hidden' && cell.letter !== null && VOWELS.includes(baseLetter(cell.letter))
+  );
+  // Se usa en los mismos momentos en que se puede comprar una vocal
+  const canUseAllVowels =
+    currentPlayer.hasAllVowels &&
+    (state.turnPhase === 'spin' || state.turnPhase === 'vowels') &&
+    hasHiddenVowels &&
+    !isRevealing;
 
   const handleChangeTurn = useCallback(async () => {
     playTransition();
+    setChangingTurn(true);
     setPendingBote(false);
+    setPendingSpecialResult(null);
     await new Promise((resolve) => setTimeout(resolve, state.config.turnChangeDelay));
     dispatch({ type: 'NEXT_TURN' });
+    setChangingTurn(false);
     setMessage(null);
     setFailedLetterType(null);
   }, [dispatch, state.config.turnChangeDelay]);
+
+  // Se agotó el tiempo para pulsar la consonante: el jugador pierde el turno
+  const handleConsonantTimeout = useCallback(() => {
+    playError();
+    setLetter('');
+    setMessage({ text: `⏱️ ¡Se acabó el tiempo! ${currentPlayer.name} pierde el turno`, type: 'error' });
+    setTimeout(() => {
+      handleChangeTurn();
+    }, 1500);
+    setChangingTurn(true);
+  }, [currentPlayer.name, handleChangeTurn]);
 
   const handleWheelResult = useCallback((result: WheelResult) => {
     setPendingBote(false);
@@ -118,6 +144,10 @@ export function GameControls() {
     } else if (result === 'COMODIN') {
       setPendingSpecialResult(result);
       setMessage({ text: '¡COMODÍN! Si aciertas la consonante, ganarás el comodín', type: 'info' });
+      dispatch({ type: 'SET_TURN_PHASE', payload: 'consonant' });
+    } else if (result === 'TODAS_VOCALES') {
+      setPendingSpecialResult(result);
+      setMessage({ text: '¡TODAS LAS VOCALES! Si aciertas la consonante, lo guardarás en tu atril', type: 'info' });
       dispatch({ type: 'SET_TURN_PHASE', payload: 'consonant' });
     } else if (result === 'ANIBAL' || result === 'HIMILCE' || result === 'ESCIPION') {
       const name = result === 'ANIBAL' ? 'Aníbal' : result === 'HIMILCE' ? 'Himilce' : 'Escipión';
@@ -147,7 +177,7 @@ export function GameControls() {
 
   const handleGuessLetter = async (directLetter?: string) => {
     const letterToGuess = (directLetter || letter || '').trim();
-    if (!letterToGuess || isRevealing) return;
+    if (!letterToGuess || isRevealing || changingTurn) return;
 
     const upperLetter = baseLetter(letterToGuess);
     setLetter('');
@@ -206,6 +236,13 @@ export function GameControls() {
             type: 'success',
           });
           setPendingSpecialResult(null);
+        } else if (pendingSpecialResult === 'TODAS_VOCALES') {
+          dispatch({ type: 'AWARD_ALL_VOWELS', payload: currentPlayer.id });
+          setMessage({
+            text: `¡TODAS LAS VOCALES GANADO! ${result.count} aparición(es). Úsalo en tu turno cuando puedas comprar vocales.`,
+            type: 'success',
+          });
+          setPendingSpecialResult(null);
         } else if (
           pendingSpecialResult === 'ANIBAL' ||
           pendingSpecialResult === 'HIMILCE' ||
@@ -243,18 +280,7 @@ export function GameControls() {
         dispatch({ type: 'SET_TURN_PHASE', payload: allVowelsGuessed ? 'next-action' : 'vowels' });
       } else {
         setFailedLetterType('consonant');
-        if (pendingSpecialResult === 'COMODIN') {
-          setMessage({ text: 'La letra no está presente. El comodín sigue en la ruleta.', type: 'error' });
-          setPendingSpecialResult(null);
-        } else if (
-          pendingSpecialResult === 'ANIBAL' ||
-          pendingSpecialResult === 'HIMILCE' ||
-          pendingSpecialResult === 'ESCIPION'
-        ) {
-          const name = pendingSpecialResult === 'ANIBAL' ? 'Aníbal' : pendingSpecialResult === 'HIMILCE' ? 'Himilce' : 'Escipión';
-          setMessage({ text: `La letra no está presente. ${name} sigue en la ruleta.`, type: 'error' });
-          setPendingSpecialResult(null);
-        } else if (pendingSpecialResult === 'BOTE') {
+        if (pendingSpecialResult === 'BOTE') {
           setMessage({ text: 'La letra no está presente. Has perdido la opción al BOTE.', type: 'error' });
           setPendingSpecialResult(null);
           if (currentPlayer.hasWildcard) {
@@ -263,15 +289,44 @@ export function GameControls() {
             handleChangeTurn();
           }
         } else {
-          setMessage({ text: 'La letra no está presente', type: 'error' });
+          // Fallar la consonante siempre cuesta el turno, salvo que se use el comodín.
+          // Si era un gajo especial, se mantiene pendiente: con el comodín se reintenta por el mismo gajo.
+          const specialName =
+            pendingSpecialResult === 'COMODIN' ? 'El comodín'
+            : pendingSpecialResult === 'TODAS_VOCALES' ? '«Todas las vocales»'
+            : pendingSpecialResult === 'ANIBAL' ? 'Aníbal'
+            : pendingSpecialResult === 'HIMILCE' ? 'Himilce'
+            : pendingSpecialResult === 'ESCIPION' ? 'Escipión'
+            : null;
+          setMessage({
+            text: specialName
+              ? `La letra no está presente. ${specialName} sigue en la ruleta.`
+              : 'La letra no está presente',
+            type: 'error',
+          });
           if (currentPlayer.hasWildcard) {
             setDialogType('letter-fail');
           } else {
+            setPendingSpecialResult(null);
             handleChangeTurn();
           }
         }
       }
       dispatch({ type: 'GUESS_LETTER', payload: upperLetter });
+    }
+  };
+
+  const handleUseAllVowels = async () => {
+    if (!canUseAllVowels) return;
+    const result = await revealVowels();
+    dispatch({ type: 'USE_ALL_VOWELS', payload: currentPlayer.id });
+    setMessage({
+      text: `¡TODAS LAS VOCALES! ${result.count} vocal(es) descubierta(s).`,
+      type: 'success',
+    });
+    // Ya no quedan vocales: tras acertar consonante se pasa directamente a girar o resolver
+    if (state.turnPhase === 'vowels') {
+      dispatch({ type: 'SET_TURN_PHASE', payload: 'next-action' });
     }
   };
 
@@ -295,12 +350,15 @@ export function GameControls() {
       return;
     }
     dispatch({ type: 'USE_WILDCARD', payload: currentPlayer.id });
-    if (pendingSpecialResult === 'QUIEBRA') {
-      dispatch({ type: 'BANKRUPT', payload: currentPlayer.id });
+    if (dialogType === 'wheel-special') {
+      if (pendingSpecialResult === 'QUIEBRA') {
+        dispatch({ type: 'BANKRUPT', payload: currentPlayer.id });
+      }
+      setPendingSpecialResult(null);
     }
+    // En 'letter-fail' se conserva el gajo especial pendiente para reintentar la consonante
     setDialogType(null);
     setFailedLetterType(null);
-    setPendingSpecialResult(null);
     setMessage({ text: 'Comodín usado. Puedes continuar tu turno.', type: 'info' });
   };
 
@@ -316,7 +374,7 @@ export function GameControls() {
     }
     setDialogType(null);
 
-    if (pendingSpecialResult) {
+    if (dialogType === 'wheel-special') {
       if (pendingSpecialResult === 'QUIEBRA') {
         dispatch({ type: 'BANKRUPT', payload: currentPlayer.id });
         setMessage({ text: '¡QUIEBRA! Has perdido todo tu dinero', type: 'error' });
@@ -327,6 +385,7 @@ export function GameControls() {
       handleChangeTurn();
     } else {
       setFailedLetterType(null);
+      setPendingSpecialResult(null);
       dispatch({ type: 'SET_TURN_PHASE', payload: 'next-action' });
       handleChangeTurn();
     }
@@ -424,6 +483,18 @@ export function GameControls() {
       : '';
 
   const isConsonantTurn = state.turnPhase === 'consonant';
+  // La cuenta atrás corre solo mientras el jugador puede pulsar la consonante:
+  // con la ruleta cerrada y sin diálogos, revelados ni cambios de turno pendientes.
+  const consonantTimeLimit = state.config.consonantTimeLimit;
+  const consonantTimerActive =
+    consonantTimeLimit > 0 &&
+    isConsonantTurn &&
+    !showWheelModal &&
+    !dialogType &&
+    !targetMode &&
+    !isRevealing &&
+    !changingTurn &&
+    !state.roundComplete;
   const isVowelAllowed = (state.turnPhase === 'vowels' || state.turnPhase === 'spin') && !allVowelsGuessed && canBuyVowel;
 
   return (
@@ -451,6 +522,14 @@ export function GameControls() {
           )}
         </div>
 
+        {consonantTimerActive && (
+          <ConsonantTimer
+            key={`${state.currentPlayer}-${state.guessedLetters.length}`}
+            seconds={consonantTimeLimit}
+            onExpire={handleConsonantTimeout}
+          />
+        )}
+
         {castulo && currentPlayer.hasEscipion && (
           <div className={styles.spinSection}>
             <button
@@ -459,6 +538,18 @@ export function GameControls() {
               disabled={isRevealing || state.players.length < 2}
             >
               ⚔️ Usar a Escipión
+            </button>
+          </div>
+        )}
+
+        {currentPlayer.hasAllVowels && (
+          <div className={styles.spinSection}>
+            <button
+              onClick={handleUseAllVowels}
+              className={`${styles.button} ${styles.allVowelsButton}`}
+              disabled={!canUseAllVowels}
+            >
+              🔤 Usar «Todas las vocales»
             </button>
           </div>
         )}
@@ -515,7 +606,7 @@ export function GameControls() {
               <div className={styles.keyboardKeys}>
                 {ALL_CONSONANTS.map((c) => {
                   const isGuessed = state.guessedLetters.includes(c);
-                  const canClick = isConsonantTurn && !isGuessed && !isRevealing;
+                  const canClick = isConsonantTurn && !isGuessed && !isRevealing && !changingTurn;
                   return (
                     <button
                       key={c}

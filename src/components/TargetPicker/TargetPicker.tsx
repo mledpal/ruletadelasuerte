@@ -27,6 +27,7 @@ export function TargetPicker({ title, message, players, sourceId, onSelect, onCa
           {targets.map((p) => {
             const tokens: string[] = [];
             if (p.hasWildcard) tokens.push('Comodín');
+            if (p.hasAllVowels) tokens.push('Todas las vocales');
             if (p.hasAnibal) tokens.push('Aníbal');
             if (p.hasHimilce) tokens.push('Himilce');
             if (p.hasEscipion) tokens.push('Escipión');
