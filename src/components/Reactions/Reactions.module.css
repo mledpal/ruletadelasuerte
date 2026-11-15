@@ -1,0 +1,161 @@
+.toggle {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 900;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 1px solid var(--color-gold-dim);
+  background: var(--color-bg-deep);
+  color: var(--color-text);
+  font-size: 1.4rem;
+  cursor: pointer;
+  box-shadow: var(--shadow-card);
+}
+
+.toggleOpen {
+  border-color: var(--color-gold);
+}
+
+.panel {
+  position: fixed;
+  right: 16px;
+  bottom: 80px;
+  z-index: 900;
+  width: min(340px, calc(100vw - 32px));
+  padding: 12px;
+  border-radius: 18px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-deep);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.emojis {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.emoji {
+  font-size: 1.4rem;
+  padding: 4px 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.emoji:hover {
+  background: var(--color-surface-hover);
+}
+
+.quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.quickButton {
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.quickButton:hover {
+  background: var(--color-surface-hover);
+}
+
+.chat {
+  display: flex;
+  gap: 6px;
+}
+
+.chatInput {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-body);
+}
+
+.chatInput:focus {
+  outline: none;
+  border-color: var(--color-gold);
+}
+
+.chatSend {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: none;
+  background: var(--color-gold);
+  color: var(--color-bg-deep);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.chatSend:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Burbujas flotantes con lo que envían los jugadores */
+.bubbles {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 950;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: min(320px, calc(100vw - 96px));
+  pointer-events: none;
+}
+
+.bubble {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 12px;
+  border-radius: 14px 14px 14px 4px;
+  border: 1px solid var(--color-gold-dim);
+  background: var(--color-bg-deep);
+  color: var(--color-text);
+  box-shadow: var(--shadow-card);
+  animation: bubbleIn 0.3s ease-out, bubbleOut 0.6s ease-in 3.9s forwards;
+}
+
+.bubbleName {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-gold);
+}
+
+.bubbleText {
+  overflow-wrap: anywhere;
+}
+
+.bubbleEmoji .bubbleText {
+  font-size: 2rem;
+  line-height: 1.2;
+}
+
+@keyframes bubbleIn {
+  from { opacity: 0; transform: translateY(12px) scale(0.9); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes bubbleOut {
+  to { opacity: 0; transform: translateY(-8px); }
+}

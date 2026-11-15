@@ -298,3 +298,34 @@ export function playWheelLaunch(power = 0.5): void {
     void 0;
   }
 }
+
+// ─── Sonidos compartidos (modo online) ──────────────────────────────────────
+// Los sonidos que provoca una acción del jugador en turno se reenvían a los demás
+// jugadores. Los de la ruleta y el temporizador no: cada cliente los genera solo.
+
+export type SharedSound = 'ding' | 'error' | 'success' | 'transition';
+
+const SHARED_SOUNDS: Record<SharedSound, () => void> = {
+  ding: playDing,
+  error: playError,
+  success: playSuccess,
+  transition: playTransition,
+};
+
+let soundRelay: ((sound: SharedSound) => void) | null = null;
+
+/** El modo online registra aquí cómo reenviar los sonidos (null para dejar de hacerlo) */
+export function setSoundRelay(relay: ((sound: SharedSound) => void) | null): void {
+  soundRelay = relay;
+}
+
+/** Reproduce un sonido de una acción de juego y lo reenvía a los demás jugadores */
+export function playShared(sound: SharedSound): void {
+  SHARED_SOUNDS[sound]();
+  soundRelay?.(sound);
+}
+
+/** Reproduce un sonido recibido de otro jugador (sin reenviarlo) */
+export function playRemoteSound(sound: SharedSound): void {
+  SHARED_SOUNDS[sound]?.();
+}

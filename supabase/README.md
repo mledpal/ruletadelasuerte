@@ -55,6 +55,25 @@ reiniciar `yarn dev` tras cambiarlos y volver a hacer `yarn deploy` para publica
 3. En Supabase → **Table Editor → ranking** aparece la fila.
 4. En la pantalla inicial, **🏆 Clasificación** muestra las dos tablas.
 
+## Modo online (Realtime)
+
+El modo online usa **Supabase Realtime** con el mismo proyecto y las mismas variables
+`VITE_SUPABASE_URL` / `VITE_SUPABASE_KEY`. No necesita tablas ni SQL: los jugadores se
+comunican por canales efímeros (*broadcast* + *presence*) llamados `ruleta-<CÓDIGO>`.
+
+Comprobación (una sola vez):
+
+1. **Project Settings → Realtime**: Realtime debe estar activado (lo está por defecto).
+2. Si existe la opción **«Allow public access»** (o *Channel restrictions*), debe permitir
+   canales públicos. Si se activa «Private channels only», el modo online no conectará.
+
+Para probarlo: `yarn dev`, abre dos ventanas (una normal y otra de incógnito), crea una
+sala en una y únete con el código o el enlace en la otra.
+
+Límites del plan gratuito (de sobra para partidas entre amigos): 200 conexiones
+simultáneas y 100 mensajes por segundo en todo el proyecto. Cada partida envía unos
+pocos mensajes por segundo mientras se destapan letras.
+
 ## Mantenimiento
 
 - **Borrar una entrada** (p. ej. un nombre ofensivo): Table Editor → fila → *Delete*.

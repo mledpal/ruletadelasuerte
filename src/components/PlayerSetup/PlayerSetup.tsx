@@ -29,13 +29,32 @@ interface CategoryInfo {
 interface PlayerSetupProps {
   availableCategories: CategoryInfo[];
   onStart: (playerNames: string[], rounds: number, wildcardEnabled: boolean, boteRoundEnabled: boolean, selectedCategories: string[], consonantTimeLimit: number) => void;
-  onHowToPlay: () => void;
-  onRanking: () => void;
+  onHowToPlay?: () => void;
+  onRanking?: () => void;
+  /** Muestra el botón "Jugar online" */
+  onOnline?: () => void;
+  /**
+   * Modo online (anfitrión): los jugadores ya están en la sala, así que se
+   * empieza en la elección de temas y no se piden nombres.
+   */
+  fixedPlayerNames?: string[];
+  /** Motivo por el que aún no se puede empezar (p. ej. falta un rival) */
+  startBlockedReason?: string | null;
 }
 
-export function PlayerSetup({ availableCategories, onStart, onHowToPlay, onRanking }: PlayerSetupProps) {
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
-  const [playerCount, setPlayerCount] = useState<number | null>(null);
+export function PlayerSetup({
+  availableCategories,
+  onStart,
+  onHowToPlay,
+  onRanking,
+  onOnline,
+  fixedPlayerNames,
+  startBlockedReason,
+}: PlayerSetupProps) {
+  const online = fixedPlayerNames !== undefined;
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(online ? 3 : 1);
+  const [localPlayerCount, setPlayerCount] = useState<number | null>(null);
+  const playerCount = online ? fixedPlayerNames.length : localPlayerCount;
   const [names, setNames] = useState<string[]>(loadLastNames);
   const [selectedCategories, setSelectedCategories] = useState<string[]>(
     () => availableCategories.map((c) => c.name)
@@ -56,7 +75,9 @@ export function PlayerSetup({ availableCategories, onStart, onHowToPlay, onRanki
   const maxRounds = Math.min(5, totalAvailable);
 
   // Nombres de los jugadores de esta partida (obligatorios y sin repetir)
-  const playerNames = Array.from({ length: playerCount ?? 0 }, (_, i) => cleanName(names[i] ?? ''));
+  const playerNames = online
+    ? fixedPlayerNames
+    : Array.from({ length: playerCount ?? 0 }, (_, i) => cleanName(names[i] ?? ''));
   const isDuplicate = (i: number) =>
     playerNames[i] !== '' &&
     playerNames.findIndex((n) => n.toLocaleLowerCase('es') === playerNames[i].toLocaleLowerCase('es')) !== i;
@@ -109,16 +130,16 @@ export function PlayerSetup({ availableCategories, onStart, onHowToPlay, onRanki
   };
 
   const handleStart = () => {
-    if (namesValid && rounds !== null) {
+    if (namesValid && rounds !== null && !startBlockedReason) {
       saveConsonantTime(consonantTime);
-      onStart(playerNames, rounds, wildcardEnabled, boteRoundEnabled, selectedCategories, consonantTime);
+      onStart(playerNames, rounds, wildcardEnabled, boteRoundEnabled && playerNames.length >= 2, selectedCategories, consonantTime);
     }
   };
 
   return (
-    <div className={styles.wrapper}>
+    <div className={`${styles.wrapper} ${online ? styles.wrapperEmbedded : ''}`}>
       <div className={`${styles.card} ${step === 3 ? styles.cardWide : ''}`}>
-        <div className={styles.title}>La Ruleta de la Fortuna</div>
+        {!online && <div className={styles.title}>La Ruleta de la Fortuna</div>}
 
         {step === 1 && (
           <>
@@ -147,11 +168,17 @@ export function PlayerSetup({ availableCategories, onStart, onHowToPlay, onRanki
               Siguiente
             </button>
 
+            {onOnline && (
+              <button className={styles.onlineButton} onClick={onOnline}>
+                🌐 Jugar online (cada uno en su casa)
+              </button>
+            )}
+
             <button className={styles.howToPlayLink} onClick={onHowToPlay}>
               ¿Cómo se juega?
             </button>
 
-            {rankingEnabled && (
+            {rankingEnabled && onRanking && (
               <button className={styles.backLink} onClick={onRanking}>
                 🏆 Clasificación
               </button>
@@ -236,9 +263,11 @@ export function PlayerSetup({ availableCategories, onStart, onHowToPlay, onRanki
               Siguiente
             </button>
 
-            <button className={styles.backLink} onClick={() => setStep(2)}>
-              ← Volver
-            </button>
+            {!online && (
+              <button className={styles.backLink} onClick={() => setStep(2)}>
+                ← Volver
+              </button>
+            )}
           </>
         )}
 
@@ -303,9 +332,11 @@ export function PlayerSetup({ availableCategories, onStart, onHowToPlay, onRanki
               </div>
             )}
 
+            {startBlockedReason && <div className={styles.phrasesNote}>{startBlockedReason}</div>}
+
             <button
               className={styles.startButton}
-              disabled={rounds === null}
+              disabled={rounds === null || Boolean(startBlockedReason)}
               onClick={handleStart}
             >
               Comenzar partida

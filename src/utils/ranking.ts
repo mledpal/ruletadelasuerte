@@ -2,17 +2,14 @@
 // La configuración viene de VITE_SUPABASE_URL y VITE_SUPABASE_KEY (ver supabase/README.md).
 // Si faltan, el ranking queda desactivado y el juego funciona igual.
 import type { RankingEntry, RankingMode } from '../types/game';
+import { SUPABASE_KEY, SUPABASE_URL } from './supabaseConfig';
 
 /** Número de puestos de cada tabla. Debe coincidir con el de supabase/ranking.sql */
 export const RANKING_SIZE = 10;
 export const MAX_NAME_LENGTH = 20;
 
-// Se admite tanto la Project URL como la URL de la API (acabada en /rest/v1/)
-const URL = (import.meta.env.VITE_SUPABASE_URL as string | undefined)
-  ?.trim()
-  .replace(/\/+$/, '')
-  .replace(/\/rest\/v1$/, '');
-const KEY = import.meta.env.VITE_SUPABASE_KEY as string | undefined;
+const URL = SUPABASE_URL;
+const KEY = SUPABASE_KEY;
 const TIMEOUT_MS = 8000;
 
 export const rankingEnabled = Boolean(URL && KEY);

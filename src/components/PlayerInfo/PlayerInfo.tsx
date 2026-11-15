@@ -1,10 +1,12 @@
 import { useEffect, useRef } from 'react';
 import { useGame } from '../../context/GameContext';
+import { useOnline } from '../../online/OnlineContext';
 import { currencyUnit } from '../../utils/currency';
 import styles from './PlayerInfo.module.css';
 
 export function PlayerInfo() {
   const { state } = useGame();
+  const online = useOnline();
   const castulo = state.castuloMode;
   const unit = currencyUnit(castulo);
 
@@ -38,14 +40,22 @@ export function PlayerInfo() {
         {state.players.map((player, index) => {
           const isActive = index === state.currentPlayer;
           const colorClass = playerColorClasses[index % playerColorClasses.length];
+          // Modo online: quién eres tú y quién se ha desconectado
+          const seat = online ? state.seats[index] : undefined;
+          const isMe = seat !== undefined && seat === online?.clientId;
+          const offline = seat !== undefined && !isMe && !online?.peers.some((p) => p.clientId === seat);
 
           return (
             <div
               key={player.id}
-              className={`${styles.player} ${colorClass} ${isActive ? styles.active : ''}`}
+              className={`${styles.player} ${colorClass} ${isActive ? styles.active : ''} ${offline ? styles.offline : ''}`}
             >
               {isActive && <div className={styles.turnBadge}>TURNO ACTUAL</div>}
-              <div className={styles.name}>{player.name}</div>
+              <div className={styles.name}>
+                {player.name}
+                {isMe && <span className={styles.meBadge}>tú</span>}
+                {offline && <span className={styles.offlineBadge} title="Desconectado">📴</span>}
+              </div>
               <div className={styles.score}>{player.score.toLocaleString('es-ES')} {unit}</div>
               <div className={styles.wallet}>
                 <span className={styles.walletLabel}>Cartera:</span> {player.wallet.toLocaleString('es-ES')} {unit}

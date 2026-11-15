@@ -3,27 +3,20 @@ import type { GameState, GameAction, LetterCell } from '../types/game';
 import { GameContext } from './GameContext';
 import { newGameId } from '../utils/id';
 import { DEFAULT_CONSONANT_TIME } from '../utils/consonantTimer';
+import { initialTurnUi, needsRepair, sanitizeState, turnUiAfterTurnChange } from './sanitize';
 
 const SAVE_KEY = 'ruleta:state';
 
-function loadSavedState(): GameState | null {
+function loadSavedState(key: string, repair: boolean): GameState | null {
   try {
-    const raw = localStorage.getItem(SAVE_KEY);
+    const raw = localStorage.getItem(key);
     if (!raw) return null;
     const saved = JSON.parse(raw) as GameState;
-    // Sanear estado transitorio de animación
-    return {
-      ...saved,
-      gameId: saved.gameId ?? newGameId(), // guardados antiguos no tienen este campo
-      isRevealing: false,
-      // guardados antiguos no tienen límite de tiempo configurado
-      config: { ...saved.config, consonantTimeLimit: saved.config?.consonantTimeLimit ?? DEFAULT_CONSONANT_TIME },
-      wheelStop: saved.wheelStop ?? null, // guardados antiguos no tienen este campo
-      players: saved.players.map((p) => ({ ...p, hasAllVowels: p.hasAllVowels ?? false })),
-      cells: saved.cells.map((c) =>
-        c.state === 'revealing' ? { ...c, state: 'visible' } : c
-      ),
-    };
+    // En online lo repara el cliente con el turno, una vez sincronizado (OnlineProvider)
+    if (!repair) return saved;
+    const repaired = sanitizeState(saved);
+    // Si había algo a medias, la reparación cuenta como un cambio (en online se difunde)
+    return needsRepair(saved) ? { ...repaired, rev: repaired.rev + 1 } : repaired;
   } catch {
     return null;
   }
@@ -40,6 +33,9 @@ function createCellsFromPhrase(phrase: string): LetterCell[] {
 
 const initialState: GameState = {
   gameId: '',
+  rev: 0,
+  seats: [],
+  turnUi: initialTurnUi,
   phrase: 'LA RULETA DE LA FORTUNA',
   hint: 'Nombre del programa',
   category: 'TELEVISIÓN',
@@ -76,10 +72,20 @@ const initialState: GameState = {
   },
 };
 
+/** Aplica la acción y numera el cambio (rev) para la sincronización online */
 function gameReducer(state: GameState, action: GameAction): GameState {
+  if (action.type === 'REPLACE_STATE') {
+    const { state: next, bump } = action.payload;
+    return bump ? { ...next, rev: Math.max(next.rev, state.rev) + 1 } : next;
+  }
+  const next = applyAction(state, action);
+  return next === state ? state : { ...next, rev: state.rev + 1 };
+}
+
+function applyAction(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case 'INIT_GAME': {
-      const { playerNames, rounds, wildcardEnabled, boteRoundEnabled, castuloMode, consonantTimeLimit } = action.payload;
+      const { playerNames, rounds, wildcardEnabled, boteRoundEnabled, castuloMode, consonantTimeLimit, seats } = action.payload;
       const playerCount = playerNames.length;
       const players = playerNames.map((name, i) => ({
         id: i,
@@ -96,6 +102,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       return {
         ...initialState,
         gameId: newGameId(),
+        seats: seats ?? [],
         players,
         totalRounds: rounds,
         wildcardEnabled,
@@ -107,6 +114,12 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         config: { ...initialState.config, totalRounds: rounds, consonantTimeLimit },
       };
     }
+
+    case 'SET_TURN_UI':
+      return {
+        ...state,
+        turnUi: { ...state.turnUi, ...action.payload },
+      };
 
     case 'SET_PHRASE':
       return {
@@ -209,6 +222,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         wheelValue: 0,
         lastWheelResult: null,
         turnPhase: 'spin',
+        turnUi: { ...state.turnUi, ...turnUiAfterTurnChange },
       };
 
     case 'SET_TURN_PHASE':
@@ -371,6 +385,8 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         turnPhase: 'spin',
         wildcardAvailable: state.wildcardEnabled && state.players.length > 1,
         guessedLetters: [],
+        // El mensaje de quién ganó la ronda sigue visible al empezar la siguiente
+        turnUi: { ...initialTurnUi, message: state.turnUi.message },
         boteAmount: startBote ? 1000 : state.boteAmount,
         players: state.players.map((player) => ({
           ...player,
@@ -423,6 +439,8 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       return {
         ...initialState,
         gameId: newGameId(),
+        // Volver a la sala de espera en el modo online
+        seats: [],
         wildcardAvailable: state.wildcardEnabled && state.players.length > 1,
         wildcardEnabled: state.wildcardEnabled,
         totalRounds: state.totalRounds,
@@ -448,24 +466,32 @@ function gameReducer(state: GameState, action: GameAction): GameState {
   }
 }
 
-export function GameProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(gameReducer, undefined, () => loadSavedState() ?? initialState);
+interface GameProviderProps {
+  children: ReactNode;
+  /** Clave de guardado en localStorage (cada sala online tiene la suya) */
+  storageKey?: string;
+  /** Reparar al cargar lo que quedó a medias (false en online) */
+  repairOnLoad?: boolean;
+}
+
+export function GameProvider({ children, storageKey = SAVE_KEY, repairOnLoad = true }: GameProviderProps) {
+  const [state, dispatch] = useReducer(gameReducer, undefined, () => loadSavedState(storageKey, repairOnLoad) ?? initialState);
 
   const wrappedDispatch = useCallback((action: GameAction) => {
     if (action.type === 'RESET_GAME' || action.type === 'INIT_GAME') {
-      localStorage.removeItem(SAVE_KEY);
+      localStorage.removeItem(storageKey);
     }
     dispatch(action);
-  }, []);
+  }, [storageKey]);
 
   useEffect(() => {
     if (state.isRevealing) return;
     try {
-      localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+      localStorage.setItem(storageKey, JSON.stringify(state));
     } catch {
       // localStorage no disponible o lleno — ignorar
     }
-  }, [state]);
+  }, [state, storageKey]);
 
   return <GameContext.Provider value={{ state, dispatch: wrappedDispatch }}>{children}</GameContext.Provider>;
 }

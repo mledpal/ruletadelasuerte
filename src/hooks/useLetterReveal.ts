@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useGame } from '../context/GameContext';
-import { playDing, playError } from '../utils/audio';
+import { playShared } from '../utils/audio';
 import type { RevealResult } from '../types/game';
 import { baseLetter } from '../utils/letters';
 
@@ -19,7 +19,7 @@ export function useLetterReveal() {
       );
 
       if (matches.length === 0) {
-        playError();
+        playShared('error');
         return { success: false, count: 0 };
       }
 
@@ -27,7 +27,7 @@ export function useLetterReveal() {
 
       for (const match of matches) {
         dispatch({ type: 'UPDATE_CELL', payload: { id: match.id, state: 'revealing' } });
-        playDing();
+        playShared('ding');
         await delay(state.config.letterRevealDelay);
         dispatch({ type: 'UPDATE_CELL', payload: { id: match.id, state: 'visible' } });
       }
@@ -46,7 +46,7 @@ export function useLetterReveal() {
     );
 
     if (matches.length === 0) {
-      playError();
+      playShared('error');
       return { success: false, count: 0 };
     }
 
@@ -54,7 +54,7 @@ export function useLetterReveal() {
 
     for (const match of matches) {
       dispatch({ type: 'UPDATE_CELL', payload: { id: match.id, state: 'revealing' } });
-      playDing();
+      playShared('ding');
       await delay(state.config.letterRevealDelay);
       dispatch({ type: 'UPDATE_CELL', payload: { id: match.id, state: 'visible' } });
     }
@@ -71,7 +71,7 @@ export function useLetterReveal() {
 
     for (const cell of hiddenCells) {
       dispatch({ type: 'UPDATE_CELL', payload: { id: cell.id, state: 'revealing' } });
-      playDing();
+      playShared('ding');
       await delay(state.config.victoryRevealDelay);
       dispatch({ type: 'UPDATE_CELL', payload: { id: cell.id, state: 'visible' } });
     }

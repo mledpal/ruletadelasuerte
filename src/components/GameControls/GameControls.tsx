@@ -1,18 +1,21 @@
 import { useState, useCallback } from 'react';
 import { useGame } from '../../context/GameContext';
+import { useOnline } from '../../online/OnlineContext';
 import { useLetterReveal } from '../../hooks/useLetterReveal';
-import { playSuccess, playTransition, playError } from '../../utils/audio';
+import { playShared } from '../../utils/audio';
 import { Dialog } from '../Dialog/Dialog';
 import { Wheel } from '../Wheel/Wheel';
 import { TargetPicker } from '../TargetPicker/TargetPicker';
 import { ConsonantTimer } from '../ConsonantTimer/ConsonantTimer';
-import type { WheelResult, LetterCell, SpecialWheelResult } from '../../types/game';
+import type { WheelResult, LetterCell, SpecialWheelResult, TurnDialog, TurnMessage, TurnUi } from '../../types/game';
 import { formatMoney, currencyUnit } from '../../utils/currency';
 import { baseLetter, normalizeText } from '../../utils/letters';
 import styles from './GameControls.module.css';
 
 const VOWELS = ['A', 'E', 'I', 'O', 'U'];
 const VOWEL_COST = 50;
+
+const noop = () => {};
 
 const ALL_VOWELS     = ['A', 'E', 'I', 'O', 'U'];
 const ALL_CONSONANTS = ['B','C','D','F','G','H','J','K','L','M','N','Ñ','P','Q','R','S','T','V','W','X','Y','Z'];
@@ -62,23 +65,38 @@ function UsedLetters({ guessed, cells }: UsedLettersProps) {
   );
 }
 
-type DialogType = 'letter-fail' | 'wheel-special' | 'no-money-vowel' | 'bote-fail' | null;
 
 export function GameControls() {
   const { state, dispatch } = useGame();
+  const online = useOnline();
+  // En online solo juega quien tiene el turno; los demás ven la partida
+  const canAct = !online || online.canAct;
   const { revealLetter, revealVowels, revealAll, isRevealing } = useLetterReveal();
+  // Lo que se teclea es local; el resto del estado del turno vive en el reducer (state.turnUi)
   const [letter, setLetter] = useState('');
-  const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' | 'info' } | null>(null);
-  const [dialogType, setDialogType] = useState<DialogType>(null);
   const [solvePhrase, setSolvePhrase] = useState('');
-  const [failedLetterType, setFailedLetterType] = useState<'consonant' | 'vowel' | null>(null);
-  const [pendingSpecialResult, setPendingSpecialResult] = useState<SpecialWheelResult | null>(null);
-  const [pendingBote, setPendingBote] = useState(false);
-  const [targetMode, setTargetMode] = useState<'asedio' | 'escipion' | null>(null);
 
-  const [showWheelModal, setShowWheelModal] = useState(false);
-  // Hay un cambio de turno en marcha (evita que el temporizador se reactive durante la espera)
-  const [changingTurn, setChangingTurn] = useState(false);
+  const {
+    message,
+    dialog: dialogType,
+    failedLetterType,
+    pendingSpecial: pendingSpecialResult,
+    pendingBote,
+    targetMode,
+    wheelOpen: showWheelModal,
+    // Hay un cambio de turno en marcha (evita que el temporizador se reactive durante la espera)
+    changingTurn,
+  } = state.turnUi;
+
+  const patchUi = useCallback((payload: Partial<TurnUi>) => dispatch({ type: 'SET_TURN_UI', payload }), [dispatch]);
+  const setMessage = useCallback((m: TurnMessage | null) => patchUi({ message: m }), [patchUi]);
+  const setDialogType = useCallback((d: TurnDialog | null) => patchUi({ dialog: d }), [patchUi]);
+  const setFailedLetterType = useCallback((t: TurnUi['failedLetterType']) => patchUi({ failedLetterType: t }), [patchUi]);
+  const setPendingSpecialResult = useCallback((r: SpecialWheelResult | null) => patchUi({ pendingSpecial: r }), [patchUi]);
+  const setPendingBote = useCallback((b: boolean) => patchUi({ pendingBote: b }), [patchUi]);
+  const setTargetMode = useCallback((m: TurnUi['targetMode']) => patchUi({ targetMode: m }), [patchUi]);
+  const setShowWheelModal = useCallback((open: boolean) => patchUi({ wheelOpen: open }), [patchUi]);
+  const setChangingTurn = useCallback((c: boolean) => patchUi({ changingTurn: c }), [patchUi]);
 
   const castulo = state.castuloMode;
   const unit = currencyUnit(castulo);
@@ -100,27 +118,23 @@ export function GameControls() {
     !isRevealing;
 
   const handleChangeTurn = useCallback(async () => {
-    playTransition();
-    setChangingTurn(true);
-    setPendingBote(false);
-    setPendingSpecialResult(null);
+    playShared('transition');
+    patchUi({ changingTurn: true, pendingBote: false, pendingSpecial: null });
     await new Promise((resolve) => setTimeout(resolve, state.config.turnChangeDelay));
+    // NEXT_TURN también limpia el mensaje, el gajo pendiente y el cambio de turno
     dispatch({ type: 'NEXT_TURN' });
-    setChangingTurn(false);
-    setMessage(null);
-    setFailedLetterType(null);
-  }, [dispatch, state.config.turnChangeDelay]);
+  }, [dispatch, patchUi, state.config.turnChangeDelay]);
 
   // Se agotó el tiempo para pulsar la consonante: el jugador pierde el turno
   const handleConsonantTimeout = useCallback(() => {
-    playError();
+    playShared('error');
     setLetter('');
     setMessage({ text: `⏱️ ¡Se acabó el tiempo! ${currentPlayer.name} pierde el turno`, type: 'error' });
     setTimeout(() => {
       handleChangeTurn();
     }, 1500);
     setChangingTurn(true);
-  }, [currentPlayer.name, handleChangeTurn]);
+  }, [currentPlayer.name, handleChangeTurn, setMessage, setChangingTurn]);
 
   const handleWheelResult = useCallback((result: WheelResult) => {
     setPendingBote(false);
@@ -136,7 +150,7 @@ export function GameControls() {
         } else {
           setMessage({ text: '¡PIERDE TURNO!', type: 'error' });
         }
-        playError();
+        playShared('error');
         setTimeout(() => {
           handleChangeTurn();
         }, 2000);
@@ -162,7 +176,7 @@ export function GameControls() {
         dispatch({ type: 'RESET_WHEEL' });
         dispatch({ type: 'SET_TURN_PHASE', payload: 'next-action' });
       } else {
-        playError();
+        playShared('error');
         setMessage({ text: '¡ASEDIO! Entrega tu dinero temporal y tus gajos a otro jugador.', type: 'error' });
         setTargetMode('asedio');
       }
@@ -173,7 +187,8 @@ export function GameControls() {
     } else {
       dispatch({ type: 'SET_TURN_PHASE', payload: 'consonant' });
     }
-  }, [currentPlayer.hasWildcard, currentPlayer.id, dispatch, handleChangeTurn, state.boteAmount, state.players.length, castulo]);
+  }, [currentPlayer.hasWildcard, currentPlayer.id, dispatch, handleChangeTurn, state.boteAmount, state.players.length, castulo,
+      setPendingBote, setPendingSpecialResult, setDialogType, setMessage, setTargetMode]);
 
   const handleGuessLetter = async (directLetter?: string) => {
     const letterToGuess = (directLetter || letter || '').trim();
@@ -395,20 +410,23 @@ export function GameControls() {
     if (!solvePhrase || isRevealing) return;
 
     if (normalizeText(solvePhrase) === normalizeText(state.phrase)) {
-      playSuccess();
+      playShared('success');
       dispatch({ type: 'SET_REVEALING', payload: true });
       await revealAll();
       const bonusText =
         currentPlayer.hasAnibal && currentPlayer.hasHimilce
           ? ` ¡Reúne a Aníbal y Himilce: +${formatMoney(1000, castulo)} de bono!`
           : '';
+      // Mensaje antes de cerrar la ronda: en el modo online, al cerrarla el control pasa al anfitrión
       if (pendingBote) {
+        patchUi({
+          pendingBote: false,
+          message: { text: `¡BOTE GANADO! ${currentPlayer.name} se lleva ${formatMoney(state.boteAmount, castulo)} del bote.${bonusText}`, type: 'success' },
+        });
         dispatch({ type: 'WIN_BOTE', payload: currentPlayer.id });
-        setMessage({ text: `¡BOTE GANADO! ${currentPlayer.name} se lleva ${formatMoney(state.boteAmount, castulo)} del bote.${bonusText}`, type: 'success' });
-        setPendingBote(false);
       } else {
-        dispatch({ type: 'COMPLETE_ROUND', payload: currentPlayer.id });
         setMessage({ text: `¡Correcto! ${currentPlayer.name} gana la ronda y acumula ${formatMoney(currentPlayer.score, castulo)} en su cartera.${bonusText}`, type: 'success' });
+        dispatch({ type: 'COMPLETE_ROUND', payload: currentPlayer.id });
       }
     } else {
       setPendingBote(false);
@@ -494,15 +512,17 @@ export function GameControls() {
     !targetMode &&
     !isRevealing &&
     !changingTurn &&
-    !state.roundComplete;
+    !state.roundComplete &&
+    !online?.paused;
   const isVowelAllowed = (state.turnPhase === 'vowels' || state.turnPhase === 'spin') && !allVowelsGuessed && canBuyVowel;
 
   return (
     <>
       {showWheelModal && (
         <Wheel
-          onResult={handleWheelResult}
-          onClose={() => setShowWheelModal(false)}
+          remote={!canAct}
+          onResult={canAct ? handleWheelResult : undefined}
+          onClose={canAct ? () => setShowWheelModal(false) : undefined}
         />
       )}
       <div className={styles.controls}>
@@ -526,10 +546,32 @@ export function GameControls() {
           <ConsonantTimer
             key={`${state.currentPlayer}-${state.guessedLetters.length}`}
             seconds={consonantTimeLimit}
-            onExpire={handleConsonantTimeout}
+            onExpire={canAct ? handleConsonantTimeout : noop}
           />
         )}
 
+        {!canAct && online && (
+          <div className={styles.spectatorNote}>
+            {online.paused
+              ? `⏸️ Esperando a que ${currentPlayer.name} vuelva a conectarse…`
+              : online.status !== 'connected'
+                ? '📡 Conectando con la sala…'
+                : state.roundComplete
+                  ? 'Preparando la siguiente ronda…'
+                  : `👀 Juega ${currentPlayer.name}`}
+            {!online.paused && dialogType && dialogType !== 'no-money-vowel' && (
+              <span className={styles.spectatorDetail}>Está decidiendo si usar el comodín…</span>
+            )}
+            {!online.paused && targetMode && (
+              <span className={styles.spectatorDetail}>
+                {targetMode === 'asedio' ? '¡Asedio! Está eligiendo a quién entregar su botín…' : 'Escipión: está eligiendo a qué rival atacar…'}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Sin el turno, todos los controles quedan deshabilitados */}
+        <fieldset className={styles.controlsFieldset} disabled={!canAct}>
         {castulo && currentPlayer.hasEscipion && (
           <div className={styles.spinSection}>
             <button
@@ -696,9 +738,9 @@ export function GameControls() {
             />
           </div>
         )}
+        </fieldset>
 
-
-        {dialogType && (
+        {canAct && dialogType && (
           <Dialog
             message={getDialogMessage()}
             onConfirm={handleWildcardConfirm}
@@ -707,7 +749,7 @@ export function GameControls() {
           />
         )}
 
-        {targetMode && (
+        {canAct && targetMode && (
           <TargetPicker
             title={targetMode === 'asedio' ? '¡ASEDIO!' : '⚔️ Escipión ataca'}
             message={

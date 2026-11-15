@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { useGame } from '../../context/GameContext';
+import { useOnline } from '../../online/OnlineContext';
 import type { GameState, WheelResult, WheelStop, SpecialWheelResult } from '../../types/game';
 import { playWheelTick, playWheelLaunch, playBankruptSound, playError, playDing, playJackpotSound } from '../../utils/audio';
 import styles from './Wheel.module.css';
@@ -45,6 +46,8 @@ interface SpinAnim {
 interface WheelProps {
   onResult?: (result: WheelResult) => void;
   onClose?: () => void;
+  /** Modo online, jugador sin turno: solo reproduce el giro que lanza otro */
+  remote?: boolean;
 }
 
 /** Construye los gajos de la ruleta a partir del estado de la partida */
@@ -246,8 +249,11 @@ function drawMotionBlur(dst: HTMLCanvasElement, src: HTMLCanvasElement, spanDeg:
   }
 }
 
-export function Wheel({ onResult, onClose }: WheelProps) {
+export function Wheel({ onResult, onClose, remote = false }: WheelProps) {
   const { state, dispatch } = useGame();
+  const online = useOnline();
+  const sendSpin = online?.sendSpin;
+  const subscribeSpin = online?.subscribeSpin;
 
   // Los gajos se congelan al abrir el modal: así el resultado (p. ej. perder el comodín)
   // no redibuja la ruleta bajo la lengüeta justo después de caer.
@@ -740,14 +746,17 @@ export function Wheel({ onResult, onClose }: WheelProps) {
       phaseRef.current = 'done';
 
       // Guardar la casilla exacta en la que ha caído para el siguiente giro
-      dispatch({
-        type: 'SET_WHEEL_STOP',
-        payload: {
-          rotation: ((rotationRef.current % 360) + 360) % 360,
-          value: selected.value,
-          label: selected.label,
-        },
-      });
+      // (en remoto lo hace el cliente que lanzó la ruleta y llega con su estado)
+      if (!remote) {
+        dispatch({
+          type: 'SET_WHEEL_STOP',
+          payload: {
+            rotation: ((rotationRef.current % 360) + 360) % 360,
+            value: selected.value,
+            label: selected.label,
+          },
+        });
+      }
       setPhase('done');
       setLastResult(selected.value);
 
@@ -761,6 +770,7 @@ export function Wheel({ onResult, onClose }: WheelProps) {
         playDing();
       }
 
+      if (remote) return;
       if (typeof selected.value === 'number') {
         dispatch({ type: 'SPIN_WHEEL', payload: selected.value });
       } else {
@@ -770,7 +780,7 @@ export function Wheel({ onResult, onClose }: WheelProps) {
       onResult?.(selected.value);
       if (onClose) closeTimerRef.current = window.setTimeout(onClose, 2000);
     };
-  }, [segments, dispatch, onResult, onClose]);
+  }, [segments, dispatch, onResult, onClose, remote]);
 
   // ─── Carga y lanzamiento ───────────────────────────────────────────────
   const startCharge = useCallback(() => {
@@ -812,10 +822,33 @@ export function Wheel({ onResult, onClose }: WheelProps) {
     phaseRef.current = 'spinning';
     setPhase('spinning');
     playWheelLaunch(power);
-  }, [segmentAngle, segmentCount]);
+    sendSpin?.({ from, to: target, duration: spinRef.current.duration, power });
+  }, [segmentAngle, segmentCount, sendSpin]);
+
+  // Modo remoto: reproducir el giro que ha lanzado el jugador en turno
+  useEffect(() => {
+    if (!remote || !subscribeSpin) return;
+    return subscribeSpin((spin, elapsedMs) => {
+      if (phaseRef.current !== 'ready') return;
+      const from = rotationRef.current;
+      // Misma casilla final aunque la posición de partida difiera en vueltas completas
+      const to = spin.to + 360 * Math.round((from - spin.from) / 360);
+      spinRef.current = {
+        start: performance.now() - elapsedMs,
+        from,
+        to,
+        duration: spin.duration,
+        index: segmentIndexAt(to, segmentCount),
+      };
+      phaseRef.current = 'spinning';
+      setPhase('spinning');
+      if (elapsedMs < spin.duration) playWheelLaunch(spin.power);
+    });
+  }, [remote, subscribeSpin, segmentCount]);
 
   // Barra espaciadora: mantener para cargar, soltar para lanzar
   useEffect(() => {
+    if (remote) return;
     // Quitar el foco del botón que abrió el modal para que el espacio no lo vuelva a pulsar
     (document.activeElement as HTMLElement | null)?.blur();
 
@@ -841,7 +874,7 @@ export function Wheel({ onResult, onClose }: WheelProps) {
       window.removeEventListener('keyup', onKeyUp, true);
       window.removeEventListener('blur', onBlur);
     };
-  }, [startCharge, releaseCharge]);
+  }, [startCharge, releaseCharge, remote]);
 
   useEffect(() => {
     return () => {
@@ -877,7 +910,8 @@ export function Wheel({ onResult, onClose }: WheelProps) {
     return styles.positiveResult;
   };
 
-  const showMeter = phase === 'ready' || phase === 'charging' || phase === 'spinning';
+  const showMeter = !remote && (phase === 'ready' || phase === 'charging' || phase === 'spinning');
+  const spinnerName = state.players[state.currentPlayer]?.name ?? '';
 
   // Portal a <body>: un ancestro con backdrop-filter/transform confinaría el overlay fijo
   return createPortal(
@@ -916,7 +950,11 @@ export function Wheel({ onResult, onClose }: WheelProps) {
             <div className={styles.spinning}>¡Girando…!</div>
           )}
 
-          {(phase === 'ready' || phase === 'charging') && (
+          {remote && phase === 'ready' && (
+            <div className={styles.spinning}>Esperando a que {spinnerName} lance la ruleta…</div>
+          )}
+
+          {!remote && (phase === 'ready' || phase === 'charging') && (
             <>
               <button
                 type="button"

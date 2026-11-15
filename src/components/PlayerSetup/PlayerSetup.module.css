@@ -475,3 +475,33 @@
     font-size: 1.1rem;
   }
 }
+
+.onlineButton {
+  margin-top: 12px;
+  width: 100%;
+  padding: 13px;
+  font-family: var(--font-body);
+  font-size: 0.98rem;
+  font-weight: 700;
+  border: 1px solid var(--color-teal);
+  border-radius: 14px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: transform var(--transition-fast), background var(--transition-fast);
+}
+
+.onlineButton:hover {
+  transform: translateY(-2px);
+  background: var(--color-surface-hover);
+}
+
+/* Dentro de la sala de espera online */
+.wrapperEmbedded {
+  min-height: 0;
+  padding: 16px 0 0;
+}
+
+.wrapperEmbedded .card {
+  padding: 32px 24px;
+}

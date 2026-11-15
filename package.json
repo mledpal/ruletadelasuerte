@@ -11,6 +11,7 @@
     "deploy": "yarn build && scp -r dist/* miguel@192.168.0.110:/var/www/ruleta.ledemar.es"
   },
   "dependencies": {
+    "@supabase/realtime-js": "^2.119.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "three": "^0.185.1"

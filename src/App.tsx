@@ -8,22 +8,33 @@ import { WinnerModal } from './components/WinnerModal/WinnerModal';
 import { useGame } from './context/GameContext';
 import { useTheme } from './hooks/useTheme';
 import { usePhrases } from './hooks/usePhrases';
-import type { Phrase } from './types/game';
+import { usePhrasePicker } from './hooks/usePhrasePicker';
+import { useCategories } from './hooks/useCategories';
 import { PlayerSetup } from './components/PlayerSetup/PlayerSetup';
 import { Dialog } from './components/Dialog/Dialog';
 import { HowToPlay } from './components/HowToPlay/HowToPlay';
 import { RankingScreen } from './components/Ranking/Ranking';
+import { OnlineEntry } from './components/OnlineEntry/OnlineEntry';
+import { OnlineApp } from './OnlineApp';
+import { onlineEnabled } from './online/realtime';
+import { markHostOf, readRoomFromUrl, setRoomInUrl } from './online/identity';
 import './App.css';
 
 const VIEW_KEY = 'ruleta:view';
 const USED_KEY = 'ruleta:usedPhrases';
 
-type AppView = 'setup' | 'game' | 'phrases' | 'instructions' | 'ranking';
+type AppView = 'setup' | 'game' | 'phrases' | 'instructions' | 'ranking' | 'online';
 
-function GameApp() {
+interface GameAppProps {
+  /** Entrar en una sala online (como anfitrión si `host`) */
+  onEnterRoom: (room: string, host: boolean) => void;
+}
+
+function GameApp({ onEnterRoom }: GameAppProps) {
   const { state, dispatch } = useGame();
   const { theme, toggle: toggleTheme } = useTheme();
   const { phrases, addPhrase, deletePhrase, editPhrase, syncStatus } = usePhrases();
+  const { pickPhrase, resetUsed, setCategories } = usePhrasePicker(USED_KEY);
 
   const hasSavedGame = useMemo(
     () => localStorage.getItem(VIEW_KEY) === 'game' && !state.gameComplete,
@@ -35,49 +46,10 @@ function GameApp() {
   const [view, setView] = useState<AppView>(hasSavedGame ? 'game' : 'setup');
   const [showResumeDialog, setShowResumeDialog] = useState(hasSavedGame);
 
-  const usedRef = useRef<Set<string>>(
-    (() => {
-      try {
-        const raw = localStorage.getItem(USED_KEY);
-        return raw ? new Set<string>(JSON.parse(raw) as string[]) : new Set<string>();
-      } catch {
-        return new Set<string>();
-      }
-    })()
-  );
-  const selectedCategoriesRef = useRef<string[]>([]);
   const initializedRef = useRef(false);
   const previousViewRef = useRef<AppView>('setup');
 
-  const availableCategories = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const p of phrases) {
-      counts.set(p.category, (counts.get(p.category) ?? 0) + 1);
-    }
-    return Array.from(counts.entries())
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => a.name.localeCompare(b.name, 'es'));
-  }, [phrases]);
-
-  const pickPhrase = useCallback((phraseList: Phrase[]) => {
-    const cats = selectedCategoriesRef.current;
-    const filtered = cats.length > 0
-      ? phraseList.filter((p) => cats.includes(p.category))
-      : phraseList;
-    const available = filtered.filter((p) => !usedRef.current.has(p.phrase));
-    if (available.length === 0) return;
-
-    const selected = available[Math.floor(Math.random() * available.length)];
-    usedRef.current = new Set([...usedRef.current, selected.phrase]);
-    try {
-      localStorage.setItem(USED_KEY, JSON.stringify(Array.from(usedRef.current)));
-    } catch { /* ignorar */ }
-
-    dispatch({
-      type: 'SET_PHRASE',
-      payload: { phrase: selected.phrase, category: selected.category, hint: selected.hint },
-    });
-  }, [dispatch]);
+  const availableCategories = useCategories(phrases);
 
   // Guardar view en localStorage al cambiar
   useEffect(() => {
@@ -126,33 +98,30 @@ function GameApp() {
 
   const handleDiscardSaved = useCallback(() => {
     localStorage.removeItem(VIEW_KEY);
-    localStorage.removeItem(USED_KEY);
-    usedRef.current = new Set();
-    selectedCategoriesRef.current = [];
+    resetUsed();
+    setCategories([]);
     dispatch({ type: 'RESET_GAME' });
     setShowResumeDialog(false);
     setView('setup');
-  }, [dispatch]);
+  }, [dispatch, resetUsed, setCategories]);
 
   const handleInitGame = useCallback((playerNames: string[], rounds: number, wildcardEnabled: boolean, boteRoundEnabled: boolean, selectedCategories: string[], consonantTimeLimit: number) => {
     localStorage.removeItem(VIEW_KEY);
-    localStorage.removeItem(USED_KEY);
-    usedRef.current = new Set();
-    selectedCategoriesRef.current = selectedCategories;
+    resetUsed();
+    setCategories(selectedCategories);
     // El modo Cástulo se activa solo si se elige exclusivamente la categoría CASTULO.
     const castuloMode = selectedCategories.length === 1 && selectedCategories[0] === 'CASTULO';
     dispatch({ type: 'INIT_GAME', payload: { playerNames, rounds, wildcardEnabled, boteRoundEnabled, castuloMode, consonantTimeLimit } });
     pickPhrase(phrases);
     setView('game');
-  }, [phrases, dispatch, pickPhrase]);
+  }, [phrases, dispatch, pickPhrase, resetUsed, setCategories]);
 
   const handleStartGame = useCallback(() => {
     localStorage.removeItem(VIEW_KEY);
-    localStorage.removeItem(USED_KEY);
-    usedRef.current = new Set();
+    resetUsed();
     dispatch({ type: 'RESET_GAME' });
     pickPhrase(phrases);
-  }, [phrases, dispatch, pickPhrase]);
+  }, [phrases, dispatch, pickPhrase, resetUsed]);
 
   if (showResumeDialog) {
     return (
@@ -184,10 +153,24 @@ function GameApp() {
     );
   }
 
+  if (view === 'online') {
+    return (
+      <div className="appSetup">
+        <OnlineEntry onEnter={onEnterRoom} onBack={() => setView('setup')} />
+      </div>
+    );
+  }
+
   if (view === 'setup') {
     return (
       <div className="appSetup">
-        <PlayerSetup availableCategories={availableCategories} onStart={handleInitGame} onHowToPlay={handleOpenInstructions} onRanking={() => setView('ranking')} />
+        <PlayerSetup
+          availableCategories={availableCategories}
+          onStart={handleInitGame}
+          onHowToPlay={handleOpenInstructions}
+          onRanking={() => setView('ranking')}
+          onOnline={onlineEnabled ? () => setView('online') : undefined}
+        />
       </div>
     );
   }
@@ -249,9 +232,33 @@ function GameApp() {
 }
 
 function App() {
+  const [room, setRoom] = useState(readRoomFromUrl);
+
+  // Atrás/adelante del navegador entre la sala y la partida local
+  useEffect(() => {
+    const onPopState = () => setRoom(readRoomFromUrl());
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
+  const enterRoom = useCallback((code: string, host: boolean) => {
+    if (host) markHostOf(code);
+    setRoomInUrl(code);
+    setRoom(code);
+  }, []);
+
+  const exitRoom = useCallback(() => {
+    setRoomInUrl(null);
+    setRoom(null);
+  }, []);
+
+  if (room && onlineEnabled) {
+    return <OnlineApp key={room} room={room} onExit={exitRoom} />;
+  }
+
   return (
     <GameProvider>
-      <GameApp />
+      <GameApp onEnterRoom={enterRoom} />
     </GameProvider>
   );
 }

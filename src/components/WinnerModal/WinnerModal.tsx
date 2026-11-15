@@ -13,11 +13,27 @@ interface WinnerModalProps {
   boteWinnerId: number | null;
   onNewGame: () => void;
   castulo?: boolean;
+  /** Enviar la puntuación al ranking (en online solo lo hace el anfitrión) */
+  submitRanking?: boolean;
+  newGameLabel?: string;
+  /** Aviso bajo el botón (p. ej. "esperando al anfitrión") */
+  footerNote?: string;
 }
 
 const MEDAL = ['🥇', '🥈', '🥉'];
 
-export function WinnerModal({ gameId, totalRounds, players, boteAmount, boteWinnerId, onNewGame, castulo = false }: WinnerModalProps) {
+export function WinnerModal({
+  gameId,
+  totalRounds,
+  players,
+  boteAmount,
+  boteWinnerId,
+  onNewGame,
+  castulo = false,
+  submitRanking = true,
+  newGameLabel = 'Nuevo Juego',
+  footerNote,
+}: WinnerModalProps) {
   const ranked = [...players].sort((a, b) => b.wallet - a.wallet);
   const boteWinner = boteWinnerId !== null ? players.find((p) => p.id === boteWinnerId) : null;
   const unit = currencyUnit(castulo);
@@ -25,7 +41,7 @@ export function WinnerModal({ gameId, totalRounds, players, boteAmount, boteWinn
   // Solo el ganador (y con algo de dinero) opta al ranking global
   const winner = ranked[0];
   const ranking = useSubmitWinner(
-    winner && winner.wallet > 0
+    submitRanking && winner && winner.wallet > 0
       ? { gameId, name: winner.name, score: winner.wallet, mode: castulo ? 'castulo' : 'normal', rounds: totalRounds }
       : null
   );
@@ -87,8 +103,10 @@ export function WinnerModal({ gameId, totalRounds, players, boteAmount, boteWinn
           </section>
         )}
 
+        {footerNote && <div className={styles.rankingMsg}>{footerNote}</div>}
+
         <button className={styles.button} onClick={onNewGame}>
-          Nuevo Juego
+          {newGameLabel}
         </button>
       </div>
     </div>

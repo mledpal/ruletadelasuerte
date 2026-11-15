@@ -305,3 +305,23 @@
     padding: 1px 6px;
   }
 }
+
+/* Modo online */
+.meBadge {
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 0.7em;
+  vertical-align: middle;
+  background: var(--color-gold-dim);
+  color: var(--color-text);
+}
+
+.offlineBadge {
+  margin-left: 6px;
+  font-size: 0.8em;
+}
+
+.offline {
+  opacity: 0.55;
+}

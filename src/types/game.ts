@@ -75,9 +75,39 @@ export interface WheelStop {
   label: string;
 }
 
+export type TurnDialog = 'letter-fail' | 'wheel-special' | 'no-money-vowel' | 'bote-fail';
+
+export interface TurnMessage {
+  text: string;
+  type: 'success' | 'error' | 'info';
+}
+
+/**
+ * Estado de la interfaz del turno (mensajes, diálogos, gajo pendiente...).
+ * Vive en el reducer para que se guarde al recargar y se comparta en el modo online.
+ */
+export interface TurnUi {
+  message: TurnMessage | null;
+  /** Gajo especial que se gana si se acierta la consonante */
+  pendingSpecial: SpecialWheelResult | null;
+  /** Se ha acertado la consonante del BOTE: resolver el panel da el bote */
+  pendingBote: boolean;
+  dialog: TurnDialog | null;
+  failedLetterType: 'consonant' | 'vowel' | null;
+  targetMode: 'asedio' | 'escipion' | null;
+  /** Hay un cambio de turno en marcha (acabará en NEXT_TURN) */
+  changingTurn: boolean;
+  wheelOpen: boolean;
+}
+
 export interface GameState {
   /** Identificador único de la partida (evita guardarla dos veces en el ranking) */
   gameId: string;
+  /** Contador de cambios: en el modo online se descarta un estado recibido más antiguo */
+  rev: number;
+  /** Modo online: clientId de cada jugador (vacío en partidas locales o en la sala de espera) */
+  seats: string[];
+  turnUi: TurnUi;
   phrase: string;
   hint: string;
   category: string;
@@ -105,7 +135,10 @@ export interface GameState {
 }
 
 export type GameAction =
-  | { type: 'INIT_GAME'; payload: { playerNames: string[]; rounds: number; wildcardEnabled: boolean; boteRoundEnabled: boolean; castuloMode: boolean; consonantTimeLimit: number } }
+  | { type: 'INIT_GAME'; payload: { playerNames: string[]; rounds: number; wildcardEnabled: boolean; boteRoundEnabled: boolean; castuloMode: boolean; consonantTimeLimit: number; seats?: string[] } }
+  | { type: 'SET_TURN_UI'; payload: Partial<TurnUi> }
+  /** Sustituye el estado entero (estado recibido en el modo online). Con `bump` cuenta como cambio propio. */
+  | { type: 'REPLACE_STATE'; payload: { state: GameState; bump?: boolean } }
   | { type: 'SET_PHRASE'; payload: { phrase: string; hint: string; category: string } }
   | { type: 'UPDATE_CELL'; payload: { id: string; state: CellState } }
   | { type: 'SET_REVEALING'; payload: boolean }
