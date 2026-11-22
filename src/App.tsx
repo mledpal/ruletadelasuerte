@@ -184,6 +184,8 @@ function GameApp({ onEnterRoom }: GameAppProps) {
           players={state.players}
           boteAmount={state.boteAmount}
           boteWinnerId={state.boteWinnerId ?? null}
+          wildcardEnabled={state.wildcardEnabled}
+          boteRoundEnabled={state.boteRoundEnabled}
           castulo={state.castuloMode}
           onNewGame={() => setView('setup')}
         />

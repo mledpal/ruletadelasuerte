@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { RankingEntry, RankingMode } from '../types/game';
 import { fetchRanking, qualifies, rankingEnabled, submitScore } from '../utils/ranking';
+import type { ScoreSubmission } from '../utils/ranking';
 
 /**
  * Resultado de una petición asociado a su clave. Mientras la clave guardada no
@@ -45,43 +46,34 @@ export function useRankingBoard(mode: RankingMode) {
 
 export type SubmitStatus = 'disabled' | 'sending' | 'entered' | 'not-qualified' | 'error';
 
-interface WinnerResult {
-  gameId: string;
-  name: string;
-  score: number;
-  mode: RankingMode;
-  rounds: number;
-}
-
 /**
  * Al terminar la partida: carga el top y, si el ganador entra, lo envía.
  * Es idempotente (el servidor ignora un gameId repetido), así que no importa
  * que se ejecute dos veces (StrictMode) o que se reintente.
  */
-export function useSubmitWinner(winner: WinnerResult | null) {
+export function useSubmitWinner(winner: ScoreSubmission | null) {
   const [attempt, setAttempt] = useState(0);
   const [result, setResult] = useState<Result<SubmitStatus> | null>(null);
 
+  // El objeto se crea en cada render: se serializa para usarlo como dependencia
+  const payload = winner ? JSON.stringify(winner) : null;
   const gameId = winner?.gameId;
-  const name = winner?.name;
-  const score = winner?.score ?? 0;
-  const mode = winner?.mode;
-  const rounds = winner?.rounds ?? 0;
   const key = `${gameId}:${attempt}`;
 
   useEffect(() => {
-    if (!rankingEnabled || !gameId || !name || !mode) return;
+    if (!rankingEnabled || !payload) return;
+    const data = JSON.parse(payload) as ScoreSubmission;
     let cancelled = false;
 
     (async () => {
-      let entries = await fetchRanking(mode);
-      const alreadyIn = entries.some((e) => e.gameId === gameId);
-      if (!alreadyIn && qualifies(entries, score)) {
-        await submitScore({ gameId, name, score, mode, rounds });
-        entries = await fetchRanking(mode);
+      let entries = await fetchRanking(data.mode);
+      const alreadyIn = entries.some((e) => e.gameId === data.gameId);
+      if (!alreadyIn && qualifies(entries, data.score, data.players)) {
+        await submitScore(data);
+        entries = await fetchRanking(data.mode);
       }
       if (cancelled) return;
-      const status = entries.some((e) => e.gameId === gameId) ? 'entered' : 'not-qualified';
+      const status = entries.some((e) => e.gameId === data.gameId) ? 'entered' : 'not-qualified';
       setResult({ key, status, entries });
     })().catch(() => {
       if (!cancelled) setResult({ key, status: 'error', entries: [] });
@@ -90,7 +82,7 @@ export function useSubmitWinner(winner: WinnerResult | null) {
     return () => {
       cancelled = true;
     };
-  }, [key, gameId, name, score, mode, rounds]);
+  }, [key, payload]);
 
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
 

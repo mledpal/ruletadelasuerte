@@ -74,6 +74,24 @@ Límites del plan gratuito (de sobra para partidas entre amigos): 200 conexiones
 simultáneas y 100 mensajes por segundo en todo el proyecto. Cada partida envía unos
 pocos mensajes por segundo mientras se destapan letras.
 
+## Qué se guarda y cómo se ordena
+
+Cada entrada guarda, además del ganador, su dinero, el modo, las rondas y la fecha:
+el **nº de jugadores**, si fue **online o local**, los **nombres de los rivales**, si
+se jugó con **comodín** y si hubo **ronda de bote** (y si la ganó él).
+
+El top se ordena poniendo **primero las partidas en grupo** (2 o más jugadores) y
+después las individuales; dentro de cada grupo, por dinero. Así el Top 1 nunca es una
+partida en solitario mientras haya alguna en grupo. Las entradas anteriores a este
+cambio no tienen esos datos (se muestran con «? jugadores») y se ordenan junto a las
+individuales.
+
+### Actualizar una instalación anterior
+
+Vuelve a ejecutar [`ranking.sql`](./ranking.sql) entero en el SQL Editor: añade las
+columnas nuevas sin borrar datos y sustituye la función `submit_score`. Hasta que lo
+hagas, el juego no podrá guardar puntuaciones (la versión nueva envía más datos).
+
 ## Mantenimiento
 
 - **Borrar una entrada** (p. ej. un nombre ofensivo): Table Editor → fila → *Delete*.
@@ -85,8 +103,9 @@ pocos mensajes por segundo mientras se destapan letras.
 ## Seguridad y límites
 
 - La tabla es de solo lectura para el público (RLS). La única escritura posible es la
-  función `submit_score`, que valida nombre (1-20 caracteres), modo, rondas y
-  puntuación, comprueba en el servidor si entra en el top y recorta lo demás.
+  función `submit_score`, que valida nombre (se recorta a 20 caracteres), modo,
+  rondas, puntuación y los datos de la partida (jugadores, rivales, online, comodín,
+  bote), comprueba en el servidor si entra en el top y recorta lo demás.
 - Cada partida tiene un `game_id` único: recargar la pantalla final no duplica entradas.
 - Como todo juego que calcula la puntuación en el navegador, alguien con
   conocimientos podría llamar a la API con una puntuación inventada. Para un juego

@@ -74,7 +74,7 @@ Si `boteRoundEnabled` (requiere ≥2 jugadores), la última ronda acumula un bot
 
 ### Ranking global (Supabase)
 
-- Top 10 global por modo (`'normal' | 'castulo'`) con la puntuación (`wallet`) del ganador de cada partida. Puesta en marcha y mantenimiento: `supabase/README.md`; esquema: `supabase/ranking.sql`.
+- Top 10 global por modo (`'normal' | 'castulo'`) con la puntuación (`wallet`) del ganador de cada partida, más los datos de la partida (`RankingGameInfo`: nº de jugadores, online/local, rivales, comodín, bote). **Orden: primero las partidas en grupo (≥2 jugadores, columna generada `group_game`), luego por dinero**; el mismo orden está en `ranking.sql` y en `qualifies()` de `src/utils/ranking.ts` (mantenerlos iguales). Las filas antiguas tienen esos datos a null y cuentan como no-grupo. Puesta en marcha y mantenimiento: `supabase/README.md`; esquema: `supabase/ranking.sql`.
 - Cliente REST sin dependencias en `src/utils/ranking.ts`; config por `VITE_SUPABASE_URL` / `VITE_SUPABASE_KEY` en `.env` (ver `.env.example`). Sin ellas, `rankingEnabled = false` y el ranking se oculta.
 - La tabla es de solo lectura pública; la única escritura es la RPC `submit_score`, que valida, decide si entra en el top y poda el resto.
 - `state.gameId` (UUID, nuevo en cada `INIT_GAME`/`RESET_GAME`) hace el envío idempotente. `useSubmitWinner` (en `src/hooks/useRanking.ts`) se ejecuta desde `WinnerModal`.

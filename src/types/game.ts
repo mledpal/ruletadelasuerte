@@ -169,7 +169,26 @@ export type GameAction =
 /** Tabla del ranking global: el modo Cástulo tiene la suya propia */
 export type RankingMode = 'normal' | 'castulo';
 
-export interface RankingEntry {
+/**
+ * Datos de la partida que se guardan con cada puntuación.
+ * En las entradas antiguas (anteriores a guardarlos) vienen a null.
+ */
+export interface RankingGameInfo {
+  /** Nº de jugadores de la partida (1-6) */
+  players: number | null;
+  /** true = online, false = local */
+  online: boolean | null;
+  /** Nombres de los rivales del ganador */
+  opponents: string[] | null;
+  /** Se jugó con comodín */
+  wildcard: boolean | null;
+  /** Había ronda de bote */
+  bote: boolean | null;
+  /** El ganador se llevó el bote */
+  boteWon: boolean | null;
+}
+
+export interface RankingEntry extends RankingGameInfo {
   gameId: string;
   name: string;
   score: number;

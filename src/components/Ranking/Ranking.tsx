@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import type { RankingEntry, RankingMode } from '../../types/game';
 import { useRankingBoard } from '../../hooks/useRanking';
 import { formatMoney } from '../../utils/currency';
-import { RANKING_SIZE } from '../../utils/ranking';
+import { isGroupGame, RANKING_SIZE } from '../../utils/ranking';
 import styles from './Ranking.module.css';
 
 interface RankingTableProps {
@@ -14,27 +14,63 @@ interface RankingTableProps {
 
 const dateFormat = new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit' });
 
-/** Tabla del top global. */
+/** Nº de jugadores y tipo de partida: «👥 3 jugadores · 🌐 Online» */
+function describeGame(e: RankingEntry): string {
+  const parts: string[] = [];
+  if (e.players === null) parts.push('👥 ? jugadores');
+  else if (e.players === 1) parts.push('👤 Individual');
+  else parts.push(`👥 ${e.players} jugadores`);
+  if (e.online !== null) parts.push(e.online ? '🌐 Online' : '🏠 Local');
+  parts.push(`${e.rounds} ${e.rounds === 1 ? 'ronda' : 'rondas'}`);
+  parts.push(dateFormat.format(new Date(e.createdAt)));
+  return parts.join(' · ');
+}
+
+/** Rivales y extras: «vs Ana, Luis · 🃏 Comodín · 💰 Bote ganado» */
+function describeExtras(e: RankingEntry): string {
+  const parts: string[] = [];
+  if (e.opponents && e.opponents.length > 0) parts.push(`vs ${e.opponents.join(', ')}`);
+  if (e.wildcard) parts.push('🃏 Comodín');
+  if (e.bote) parts.push(e.boteWon ? '💰 Bote ganado' : '💰 Bote');
+  return parts.join(' · ');
+}
+
+/** Tabla del top global: partidas en grupo primero y después las individuales. */
 export function RankingTable({ entries, castulo, highlightId }: RankingTableProps) {
   if (entries.length === 0) {
     return <div className={styles.empty}>Todavía no hay puntuaciones. ¡Sé el primero!</div>;
   }
 
+  // Primera entrada que no es en grupo: ahí empieza la sección de individuales
+  const firstSolo = entries.findIndex((e) => !isGroupGame(e));
+
   return (
     <ol className={styles.table}>
-      {entries.map((e, i) => (
-        <li
-          key={e.gameId}
-          className={`${styles.row} ${i < 3 ? styles.podium : ''} ${e.gameId === highlightId ? styles.highlight : ''}`}
-        >
-          <span className={styles.pos}>{i + 1}</span>
-          <span className={styles.name}>{e.name}</span>
-          <span className={styles.meta}>
-            {e.rounds} {e.rounds === 1 ? 'ronda' : 'rondas'} · {dateFormat.format(new Date(e.createdAt))}
-          </span>
-          <span className={styles.score}>{formatMoney(e.score, castulo)}</span>
-        </li>
-      ))}
+      {entries.map((e, i) => {
+        const extras = describeExtras(e);
+        return (
+          <Fragment key={e.gameId}>
+            {i === firstSolo && (
+              <li className={styles.divider} aria-hidden="true">
+                {i === 0 ? 'Sin partidas en grupo todavía' : 'Partidas individuales'}
+              </li>
+            )}
+            <li
+              className={`${styles.row} ${i < 3 ? styles.podium : ''} ${e.gameId === highlightId ? styles.highlight : ''}`}
+            >
+              <span className={styles.pos}>{i + 1}</span>
+              <span className={styles.name}>{e.name}</span>
+              <span className={styles.meta}>{describeGame(e)}</span>
+              {extras && (
+                <span className={styles.extras} title={extras}>
+                  {extras}
+                </span>
+              )}
+              <span className={styles.score}>{formatMoney(e.score, castulo)}</span>
+            </li>
+          </Fragment>
+        );
+      })}
     </ol>
   );
 }
@@ -54,6 +90,7 @@ export function RankingScreen({ onBack }: RankingScreenProps) {
       <div className={styles.card}>
         <div className={styles.title}>Clasificación</div>
         <div className={styles.subtitle}>Top {RANKING_SIZE} global</div>
+        <div className={styles.note}>Las partidas en grupo van siempre por delante de las individuales</div>
 
         <div className={styles.tabs} role="tablist">
           <button

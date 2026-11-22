@@ -166,6 +166,9 @@ function OnlineGame({ onExit, onChangeName }: OnlineGameProps) {
               players={state.players}
               boteAmount={state.boteAmount}
               boteWinnerId={state.boteWinnerId ?? null}
+              wildcardEnabled={state.wildcardEnabled}
+              boteRoundEnabled={state.boteRoundEnabled}
+              online
               castulo={state.castuloMode}
               submitRanking={isHost}
               newGameLabel={isHost ? 'Otra partida en esta sala' : 'Salir de la sala'}

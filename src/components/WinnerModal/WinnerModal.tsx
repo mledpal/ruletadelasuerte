@@ -11,6 +11,12 @@ interface WinnerModalProps {
   players: Player[];
   boteAmount: number;
   boteWinnerId: number | null;
+  /** Se jugó con comodín (se guarda en el ranking) */
+  wildcardEnabled: boolean;
+  /** Había ronda de bote (se guarda en el ranking) */
+  boteRoundEnabled: boolean;
+  /** Partida online (se guarda en el ranking) */
+  online?: boolean;
   onNewGame: () => void;
   castulo?: boolean;
   /** Enviar la puntuación al ranking (en online solo lo hace el anfitrión) */
@@ -28,6 +34,9 @@ export function WinnerModal({
   players,
   boteAmount,
   boteWinnerId,
+  wildcardEnabled,
+  boteRoundEnabled,
+  online = false,
   onNewGame,
   castulo = false,
   submitRanking = true,
@@ -42,7 +51,19 @@ export function WinnerModal({
   const winner = ranked[0];
   const ranking = useSubmitWinner(
     submitRanking && winner && winner.wallet > 0
-      ? { gameId, name: winner.name, score: winner.wallet, mode: castulo ? 'castulo' : 'normal', rounds: totalRounds }
+      ? {
+          gameId,
+          name: winner.name,
+          score: winner.wallet,
+          mode: castulo ? 'castulo' : 'normal',
+          rounds: totalRounds,
+          players: players.length,
+          online,
+          opponents: ranked.slice(1).map((p) => p.name),
+          wildcard: wildcardEnabled,
+          bote: boteRoundEnabled && players.length >= 2,
+          boteWon: boteRoundEnabled && players.length >= 2 && boteWinnerId === winner.id,
+        }
       : null
   );
 
